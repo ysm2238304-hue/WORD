@@ -37,10 +37,15 @@
         
         /* 
            ==================================================
-           終極防護：徹底封印網頁原生滑動與橡皮筋彈跳效應
+           終極防護：徹底封印網頁原生滑動、放大與選取行為
            ================================================== 
         */
-        body { 
+        html, body {
+            -webkit-text-size-adjust: 100%; /* 防 Safari 橫向重整自動放大字體 */
+            text-size-adjust: 100%;
+            -webkit-user-select: none; /* 防長按文字反白選取 */
+            user-select: none;
+            -webkit-touch-callout: none; /* 防長按跳出系統選單 */
             overflow: hidden; 
             overscroll-behavior: none; 
             touch-action: none; 
@@ -51,6 +56,8 @@
         /* 釋放按鈕的點擊權限，但維持無延遲防護 */
         button, a, .grid-btn { 
             touch-action: manipulation; 
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent; /* 消除點擊時的預設灰底 */
         }
         
         /* 九宮格與按鈕立體感 (改用相對單位適應縮放) */
@@ -98,8 +105,14 @@
 </head>
 <body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-[100dvh] w-[100dvw] overflow-hidden flex items-center justify-center">
 
+    <!-- 載入保護幕：防止重整時大字體瞬間閃現導致 Safari 強制放大 -->
+    <div id="loading-screen" class="fixed inset-0 z-[999] bg-blue-50 flex flex-col items-center justify-center transition-opacity duration-500">
+        <i data-lucide="loader-2" class="w-[10dvh] h-[10dvh] text-blue-500 animate-spin mb-[2dvh]"></i>
+        <h2 class="text-[clamp(1.5rem,3dvh,2.5rem)] font-black text-blue-800 tracking-widest">系統初始化中...</h2>
+    </div>
+
     <!-- 直式螢幕警告 -->
-    <div class="portrait-warning fixed inset-0 z-50 bg-blue-600 text-white flex-col items-center justify-center p-[4dvh] text-center">
+    <div class="portrait-warning fixed inset-0 z-[900] bg-blue-600 text-white flex-col items-center justify-center p-[4dvh] text-center">
         <i data-lucide="rotate-ccw" class="w-[20dvh] h-[20dvh] mb-[4dvh] animate-spin-slow"></i>
         <h1 class="text-[clamp(2rem,6dvh,4rem)] font-black mb-[2dvh]">請將平板轉為橫向使用</h1>
         <p class="text-[clamp(1.2rem,3dvh,2rem)]">此遊戲專為橫向螢幕設計，以獲得最佳體驗！</p>
@@ -117,6 +130,17 @@
     <div id="app" class="relative z-10 w-full h-[100dvh] max-w-[1350px] mx-auto p-[2dvh] md:p-[3dvh] lg:p-[4dvh] flex items-center justify-center overflow-hidden"></div>
 
     <script>
+        // --- 處理載入保護幕 (延遲 300ms 等 Safari 排版完畢才顯示) ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 300);
+        });
+
         // --- 徹底物理防護雙指縮放與滾動 ---
         document.addEventListener('touchmove', function(event) { event.preventDefault(); }, { passive: false });
         document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) { event.preventDefault(); } }, { passive: false });
@@ -127,7 +151,7 @@
             lastTouchEnd = now;
         }, { passive: false });
 
-        // --- 實體化立體怪獸設計 ---
+        // --- 實體化立體怪獸設計 (替換了危險怪為碎裂炸彈怪) ---
         const monsters = {
             cigarette: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[20dvh] h-[35dvh] max-w-[100px] max-h-[160px] bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[clamp(4px,1dvh,8px)] border-gray-400 shadow-[10px_10px_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-[10%] relative animate-float"><div class="flex gap-[1dvh] mt-[5%]"><div class="w-[1.5dvh] h-[1.5dvh] bg-gray-800 rounded-full"></div><div class="w-[1.5dvh] h-[1.5dvh] bg-gray-800 rounded-full"></div></div><div class="w-[4dvh] h-[1dvh] bg-gray-800 rounded-full mb-[15%]"></div><i data-lucide="wind" class="w-[60%] h-auto text-gray-400 absolute -top-[30%] animate-pulse"></i></div></div>`,
             plastic: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-amber-300 to-orange-500 rounded-[20%] border-[clamp(4px,1dvh,8px)] border-amber-700 shadow-[12px_12px_0_rgba(180,83,9,0.25)] flex items-center justify-center relative transform rotate-12 animate-float"><div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div><i data-lucide="skull" class="w-[50%] h-[50%] text-amber-900 z-10 drop-shadow-md"></i></div></div>`,
@@ -135,7 +159,21 @@
             ticket: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[28dvh] h-[35dvh] max-w-[130px] max-h-[160px] bg-gradient-to-b from-yellow-100 to-yellow-300 border-[clamp(4px,1dvh,8px)] border-yellow-600 shadow-[10px_10px_0_rgba(202,138,4,0.3)] flex flex-col items-center justify-between py-[8%] relative animate-float rounded-xl"><div class="w-[50%] h-[8%] bg-yellow-600 rounded-full"></div><div class="flex gap-[1dvh]"><div class="w-[2dvh] h-[2dvh] bg-red-500 border-[clamp(2px,0.5dvh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div><div class="w-[2dvh] h-[2dvh] bg-red-500 border-[clamp(2px,0.5dvh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div></div><i data-lucide="receipt" class="w-[50%] h-[50%] text-yellow-700 drop-shadow-md"></i><div class="text-[clamp(1.5rem,4dvh,2rem)] font-black text-yellow-800">$</div></div></div>`,
             block: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-purple-500 to-indigo-700 rounded-2xl border-[clamp(4px,1dvh,8px)] border-indigo-900 shadow-[12px_12px_0_rgba(49,46,129,0.4)] flex flex-col items-center justify-center relative transform -rotate-6 animate-float"><div class="flex gap-[1dvh] absolute top-[15%]"><div class="w-[20%] h-[10%] bg-indigo-900 transform rotate-12"></div><div class="w-[20%] h-[10%] bg-indigo-900 transform -rotate-12"></div></div><div class="flex gap-[1.5dvh] mt-[15%]"><div class="w-[1.5dvh] h-[1.5dvh] bg-white rounded-full"></div><div class="w-[1.5dvh] h-[1.5dvh] bg-white rounded-full"></div></div><i data-lucide="ban" class="w-[45%] h-[45%] text-pink-400 mt-[5%] drop-shadow-md"></i></div></div>`,
             water: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1dvh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(29,78,216,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;"><div class="flex gap-[1.5dvh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div></div><div class="w-[30%] h-[10%] border-b-[clamp(2px,0.5dvh,4px)] border-blue-900 rounded-full"></div><i data-lucide="droplets" class="absolute -top-[15%] w-[35%] h-[35%] text-cyan-200 drop-shadow-md animate-pulse"></i></div></div>`,
-            danger: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[32dvh] h-[32dvh] max-w-[160px] max-h-[160px] bg-gradient-to-tr from-orange-500 to-yellow-400 border-[clamp(4px,1dvh,8px)] border-orange-800 shadow-[0_15px_0_rgba(154,52,18,1)] flex flex-col items-center justify-center relative transform rotate-45 rounded-2xl animate-float"><div class="transform -rotate-45 flex flex-col items-center"><div class="flex gap-[1.5dvh] mb-[5%]"><i data-lucide="x" class="w-[20%] h-[20%] text-orange-900 font-black"></i><i data-lucide="x" class="w-[20%] h-[20%] text-orange-900 font-black"></i></div><i data-lucide="alert-triangle" class="w-[45%] h-[45%] text-white drop-shadow-md"></i></div></div></div>`,
+            
+            // 全新：碎裂炸彈怪
+            danger: `<div class="relative w-full h-full flex items-center justify-center">
+                <div class="flex flex-col items-center animate-float scale-110">
+                    <div class="w-[3dvh] h-[4dvh] bg-gray-800 rounded-t-md relative z-0 mb-[-1dvh]"></div>
+                    <div class="w-[28dvh] h-[28dvh] max-w-[140px] max-h-[140px] bg-gradient-to-br from-gray-600 to-red-900 rounded-full border-[clamp(4px,1dvh,8px)] border-gray-900 shadow-[10px_10px_0_rgba(0,0,0,0.4)] flex flex-col items-center justify-center relative z-10">
+                        <div class="flex gap-[2dvh] mb-[5%] mt-[5%]">
+                            <i data-lucide="x" class="w-[4dvh] h-[4dvh] text-yellow-400 font-black drop-shadow-md"></i>
+                            <i data-lucide="x" class="w-[4dvh] h-[4dvh] text-yellow-400 font-black drop-shadow-md"></i>
+                        </div>
+                        <i data-lucide="zap" class="w-[10dvh] h-[10dvh] text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)] fill-yellow-300 animate-pulse"></i>
+                    </div>
+                </div>
+            </div>`,
+            
             stinky: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[35dvh] h-[30dvh] max-w-[160px] max-h-[144px] bg-gradient-to-br from-lime-400 to-green-600 border-[clamp(4px,1dvh,8px)] border-green-800 shadow-[12px_12px_0_rgba(21,128,61,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 60% 40% 70% / 60% 50% 70% 40%;"><div class="flex gap-[2dvh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div></div><i data-lucide="wind" class="w-[30%] h-[30%] text-green-900 opacity-60 absolute -top-[20%]"></i><div class="w-[25%] h-[20%] border-b-[clamp(2px,0.5dvh,4px)] border-green-900 rounded-full mt-[5%]"></div></div></div>`,
             slip: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1dvh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(30,58,138,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 50% 10%;"><div class="flex gap-[1.5dvh] mb-[10%]"><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div></div><div class="w-[35%] h-[25%] border-t-[clamp(4px,1dvh,6px)] border-blue-800 rounded-full mt-[5%]"></div><div class="absolute -right-[10%] top-[10%] w-[20%] h-[20%] bg-cyan-200 rounded-full border-[clamp(2px,0.5dvh,3px)] border-cyan-500"></div><div class="absolute -left-[15%] bottom-[10%] w-[25%] h-[25%] bg-blue-300 rounded-full border-[clamp(2px,0.5dvh,3px)] border-blue-600"></div></div></div>`
         };
@@ -185,8 +223,8 @@
                 explanation: "小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}是{ㄕˋ}為{ㄨㄟˋ}了{ㄌㄜ˙}「省{ㄕㄥˇ}水{ㄕㄨㄟˇ}」設{ㄕㄜˋ}計{ㄐㄧˋ}的{ㄉㄜ˙}！上{ㄕㄤˋ}小{ㄒㄧㄠˇ}號{ㄏㄠˋ}時{ㄕˊ}按{ㄢˋ}小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，就{ㄐㄧㄡˋ}能{ㄋㄥˊ}節{ㄐㄧㄝˊ}約{ㄩㄝ}珍{ㄓㄣ}貴{ㄍㄨㄟˋ}的{ㄉㄜ˙}水{ㄕㄨㄟˇ}資{ㄗ}源{ㄩㄢˊ}。"
             },
             {
-                villain: '危險怪', villainIcon: monsters.danger,
-                scenario: "🤸 尖{ㄐㄧㄢ}尖{ㄐㄧㄢ}的{ㄉㄜ˙}【危{ㄨㄟˊ}險{ㄒㄧㄢˇ}怪{ㄍㄨㄞˋ}】示{ㄕˋ}範{ㄈㄢˋ}了{ㄌㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}超{ㄔㄠ}可{ㄎㄜˇ}怕{ㄆㄚˋ}的{ㄉㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}：踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}！",
+                villain: '碎裂炸彈怪', villainIcon: monsters.danger,
+                scenario: "🤸 尖{ㄐㄧㄢ}尖{ㄐㄧㄢ}的{ㄉㄜ˙}【碎{ㄙㄨㄟˋ}裂{ㄌㄧㄝˋ}炸{ㄓㄚˋ}彈{ㄉㄢˋ}怪{ㄍㄨㄞˋ}】示{ㄕˋ}範{ㄈㄢˋ}了{ㄌㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}超{ㄔㄠ}可{ㄎㄜˇ}怕{ㄆㄚˋ}的{ㄉㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}：踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}！",
                 question: "看{ㄎㄢˋ}到{ㄉㄠˋ}「坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」時{ㄕˊ}，應{ㄧㄥ}該{ㄍㄞ}怎{ㄗㄣˇ}麼{ㄇㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}才{ㄘㄞˊ}安{ㄢ}全{ㄑㄩㄢˊ}又{ㄧㄡˋ}衛{ㄨㄟˋ}生{ㄕㄥ}？",
                 options: ["(A) 練{ㄌㄧㄢˋ}武{ㄨˇ}功{ㄍㄨㄥ}，雙{ㄕㄨㄤ}腳{ㄐㄧㄠˇ}踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}座{ㄗㄨㄛˋ}上{ㄕㄤˋ}", "(B) 乖{ㄍㄨㄞ}乖{ㄍㄨㄞ}坐{ㄗㄨㄛˋ}著{ㄓㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}"], correctAnswer: 1,
                 explanation: "蹲{ㄉㄨㄣ}踩{ㄘㄞˇ}在{ㄗㄞˋ}坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}非{ㄈㄟ}常{ㄔㄤˊ}危{ㄨㄟˊ}險{ㄒㄧㄢˇ}，陶{ㄊㄠˊ}瓷{ㄘˊ}破{ㄆㄛˋ}裂{ㄌㄧㄝˋ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}人{ㄖㄣˊ}受{ㄕㄡˋ}重{ㄓㄨㄥˋ}傷{ㄕㄤ}！請{ㄑㄧㄥˇ}務{ㄨˋ}必{ㄅㄧˋ}坐{ㄗㄨㄛˋ}著{ㄓㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}。"
@@ -292,7 +330,7 @@
             render();
         }
 
-        // --- 1. 首頁 (高度自適應 Flex 液態排版) ---
+        // --- 1. 首頁 (單列標題 + 液態排版) ---
         function renderStart() {
             return `
             <div class="w-full h-full bg-white/95 backdrop-blur-md rounded-[clamp(1.5rem,4dvh,3rem)] shadow-2xl border-[clamp(6px,1dvh,12px)] border-white p-[clamp(1.5rem,4dvh,3rem)] flex flex-row items-center justify-center gap-[4dvw] animate-zoom-in">
@@ -312,12 +350,11 @@
                         <h2 class="text-green-800 font-black text-[clamp(1rem,2.5dvh,1.8rem)] tracking-widest pt-1">南投縣政府環境保護局</h2>
                     </div>
                     
-                    <!-- 標題與盾牌圖示 -->
-                    <h1 class="font-black text-blue-800 leading-tight drop-shadow-md flex flex-col items-start w-full text-[clamp(2.5rem,6.5dvh,5rem)]">
-                        <div class="flex items-center gap-[1.5dvw]">
-                            環保小尖兵 <i data-lucide="shield-check" class="h-[clamp(2.5rem,6.5dvh,5rem)] w-auto text-green-500 drop-shadow-sm pb-1"></i>
-                        </div>
-                        <span class="text-orange-500 text-[clamp(2rem,5dvh,3.5rem)] mt-[1dvh] block">沙包挑戰賽！</span>
+                    <!-- 標題與盾牌圖示 (單列不斷行排版) -->
+                    <h1 class="font-black leading-tight drop-shadow-md flex items-center justify-start w-full whitespace-nowrap gap-[1dvw] mb-[1dvh]">
+                        <span class="text-blue-800 text-[clamp(1.2rem,3.5vw,3.5rem)]">環保小尖兵</span>
+                        <i data-lucide="shield-check" class="h-[clamp(1.5rem,4vw,4rem)] w-auto text-green-500 drop-shadow-sm flex-shrink-0"></i>
+                        <span class="text-orange-500 text-[clamp(1.2rem,3.5vw,3.5rem)]">沙包挑戰賽！</span>
                     </h1>
                     
                     <!-- 三列置中對齊排版風格 -->
