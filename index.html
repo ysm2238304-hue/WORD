@@ -2,7 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 加入 viewport-fit=cover 與 user-scalable=no 雙重鎖死縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>環保小尖兵-平板九宮格闖關</title>
 
     <!-- 引入 Tailwind CSS -->
@@ -24,7 +25,7 @@
         /* 擴充動畫特效 */
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoom-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slide-up { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slide-up { from { opacity: 0; transform: translateY(4dvh); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(-5%); } 50% { transform: translateY(5%); } }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         
@@ -34,27 +35,37 @@
         .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
         .animate-float { animation: float 4s ease-in-out infinite; }
         
-        /* 隱藏捲軸，徹底變成App體驗 */
-        body { overflow: hidden; touch-action: none; }
+        /* 
+           ==================================================
+           終極防護：徹底封印網頁原生滑動與橡皮筋彈跳效應
+           ================================================== 
+        */
+        body { 
+            overflow: hidden; 
+            overscroll-behavior: none; 
+            touch-action: none; 
+        }
+        * { 
+            touch-action: none; /* 全域封鎖手勢，防止 iOS 誤判 */
+        }
+        /* 釋放按鈕的點擊權限，但維持無延遲防護 */
+        button, a, .grid-btn { 
+            touch-action: manipulation; 
+        }
         
-        /* 九宮格與按鈕立體感 */
+        /* 九宮格與按鈕立體感 (改用相對單位適應縮放) */
         .grid-btn {
-            box-shadow: 0 8px 0 rgba(0,0,0,0.15);
+            box-shadow: 0 clamp(4px, 1dvh, 8px) 0 rgba(0,0,0,0.15);
             transition: all 0.1s;
         }
         .grid-btn:active {
-            transform: translateY(8px) !important;
+            transform: translateY(clamp(4px, 1dvh, 8px)) !important;
             box-shadow: 0 0 0 rgba(0,0,0,0.15) !important;
         }
         .grid-btn.disabled {
-            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-            transform: translateY(4px);
+            box-shadow: 0 clamp(2px, 0.5dvh, 4px) 0 rgba(0,0,0,0.1);
+            transform: translateY(clamp(2px, 0.5dvh, 4px));
             cursor: not-allowed;
-        }
-
-        /* 加入按鈕與連結的觸控鎖定，防雙擊放大 */
-        button, a, .grid-btn {
-            touch-action: manipulation;
         }
 
         /* ==================================================
@@ -62,185 +73,71 @@
            ================================================== */
         .z-word {
             display: inline-flex;
-            align-items: center; /* 讓注音與國字垂直置中對齊 */
-            margin: 0 1px 4px 1px; /* 增加下方 margin，換行時才不會擁擠 */
+            align-items: center; 
+            margin: 0 1px clamp(2px, 0.5dvh, 4px) 1px; 
             vertical-align: middle;
         }
-        .z-base {
-            line-height: 1;
-        }
+        .z-base { line-height: 1; }
         .z-ruby {
             display: inline-flex;
             flex-direction: row;
-            font-size: 0.45em; /* 注音為國字大小的 45% */
+            font-size: 0.45em; 
             font-weight: 800;
-            color: #4B5563; /* 深灰色，讓國字維持視覺主角 */
+            color: #4B5563; 
             margin-left: 2px;
         }
-        .z-symbols {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .z-sym {
-            line-height: 1.05;
-            text-align: center;
-        }
-        .z-sym.light-tone {
-            margin-bottom: 2px; /* 輕聲(˙)與下方符號的間距 */
-            font-size: 1.2em;
-        }
-        .z-tone {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-left: 1px; /* 聲調符號(ˊˇˋ)在右邊 */
-        }
+        .z-symbols { display: flex; flex-direction: column; justify-content: center; }
+        .z-sym { line-height: 1.05; text-align: center; }
+        .z-sym.light-tone { margin-bottom: 2px; font-size: 1.2em; }
+        .z-tone { display: flex; flex-direction: column; justify-content: center; margin-left: 1px; }
         .zhuyin-text {
-            line-height: 1.8 !important; /* 微調行高讓整體排版更自然 */
-            word-break: break-all;     /* 允許單字斷行，防止破版 */
-        }
-        
-        /* 隱藏預設捲動軸但保留功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            line-height: 1.8 !important; 
+            word-break: break-all;     
         }
     </style>
 </head>
-<!-- 使用 100dvh 適配行動裝置導航列 -->
-<body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-[100dvh] w-screen overflow-hidden flex items-center justify-center">
+<body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-[100dvh] w-[100dvw] overflow-hidden flex items-center justify-center">
 
     <!-- 直式螢幕警告 -->
-    <div class="portrait-warning fixed inset-0 z-50 bg-blue-600 text-white flex-col items-center justify-center p-8 text-center">
-        <i data-lucide="rotate-ccw" class="w-24 h-24 mb-6 animate-spin-slow"></i>
-        <h1 class="text-3xl font-black mb-4">請將平板轉為橫向使用</h1>
-        <p class="text-xl">此遊戲專為橫向螢幕(Landscape)設計，以獲得最佳體驗！</p>
+    <div class="portrait-warning fixed inset-0 z-50 bg-blue-600 text-white flex-col items-center justify-center p-[4dvh] text-center">
+        <i data-lucide="rotate-ccw" class="w-[20dvh] h-[20dvh] mb-[4dvh] animate-spin-slow"></i>
+        <h1 class="text-[clamp(2rem,6dvh,4rem)] font-black mb-[2dvh]">請將平板轉為橫向使用</h1>
+        <p class="text-[clamp(1.2rem,3dvh,2rem)]">此遊戲專為橫向螢幕設計，以獲得最佳體驗！</p>
     </div>
 
     <!-- 背景裝飾 -->
     <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
         <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[60%] bg-cyan-200/40 rounded-full blur-3xl"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[70%] bg-green-200/40 rounded-full blur-3xl"></div>
-        <div class="absolute top-[20%] left-[20%] w-32 h-12 bg-white/60 rounded-full blur-sm animate-[pulse_5s_ease-in-out_infinite]"></div>
-        <div class="absolute top-[60%] right-[15%] w-48 h-16 bg-white/60 rounded-full blur-sm animate-[pulse_7s_ease-in-out_infinite]"></div>
+        <div class="absolute top-[20%] left-[20%] w-[10dvw] h-[5dvh] bg-white/60 rounded-full blur-sm animate-[pulse_5s_ease-in-out_infinite]"></div>
+        <div class="absolute top-[60%] right-[15%] w-[15dvw] h-[8dvh] bg-white/60 rounded-full blur-sm animate-[pulse_7s_ease-in-out_infinite]"></div>
     </div>
 
-    <!-- 遊戲主要容器 (調整為 95dvh) -->
-    <div id="app" class="relative z-10 w-full max-w-[1350px] h-[95dvh] mx-auto p-3 lg:p-6 flex items-center justify-center"></div>
+    <!-- 遊戲主要滿版容器 (100dvh) -->
+    <div id="app" class="relative z-10 w-full h-[100dvh] max-w-[1350px] mx-auto p-[2dvh] md:p-[3dvh] lg:p-[4dvh] flex items-center justify-center overflow-hidden"></div>
 
     <script>
-        // --- 徹底鎖死平板視角：防雙指縮放與雙擊放大 ---
-        document.addEventListener('touchmove', function(event) {
-            if (event.scale !== 1) { event.preventDefault(); }
-        }, { passive: false });
-        
+        // --- 徹底物理防護雙指縮放與滾動 ---
+        document.addEventListener('touchmove', function(event) { event.preventDefault(); }, { passive: false });
+        document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) { event.preventDefault(); } }, { passive: false });
         let lastTouchEnd = 0;
         document.addEventListener('touchend', function(event) {
             let now = (new Date()).getTime();
             if (now - lastTouchEnd <= 300) { event.preventDefault(); }
             lastTouchEnd = now;
-        }, false);
+        }, { passive: false });
 
         // --- 實體化立體怪獸設計 ---
         const monsters = {
-            cigarette: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-24 h-40 bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[6px] border-gray-400 shadow-[10px_10px_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-5 relative animate-float">
-                    <div class="flex gap-3 mt-4">
-                        <div class="w-4 h-4 bg-gray-800 rounded-full"></div>
-                        <div class="w-4 h-4 bg-gray-800 rounded-full"></div>
-                    </div>
-                    <div class="w-8 h-3 bg-gray-800 rounded-full mb-6"></div>
-                    <i data-lucide="wind" class="w-14 h-14 text-gray-400 absolute -top-12 animate-pulse"></i>
-                </div>
-            </div>`,
-            plastic: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-36 h-36 bg-gradient-to-br from-amber-300 to-orange-500 rounded-[2.5rem] border-[6px] border-amber-700 shadow-[12px_12px_0_rgba(180,83,9,0.25)] flex items-center justify-center relative transform rotate-12 animate-float">
-                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div>
-                    <i data-lucide="skull" class="w-20 h-20 text-amber-900 z-10 drop-shadow-md"></i>
-                </div>
-            </div>`,
-            grandpa: `<div class="relative w-full h-full flex items-center justify-center scale-[1.1] lg:scale-[1.35]">
-                <div class="flex flex-col items-center animate-float">
-                    <div class="w-24 h-24 bg-amber-200 rounded-full border-[6px] border-gray-700 shadow-lg flex items-center justify-center relative z-10">
-                        <div class="flex gap-2 absolute top-6">
-                            <div class="w-8 h-8 border-[4px] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-3 h-3 bg-gray-800 rounded-full"></div></div>
-                            <div class="w-8 h-8 border-[4px] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-3 h-3 bg-gray-800 rounded-full"></div></div>
-                        </div>
-                        <div class="w-8 h-2 bg-gray-400 rounded-full absolute bottom-4"></div>
-                    </div>
-                    <div class="w-32 h-20 bg-blue-600 rounded-t-[2.5rem] border-[6px] border-gray-700 shadow-xl -mt-5 relative z-0"></div>
-                </div>
-            </div>`,
-            ticket: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-32 h-40 bg-gradient-to-b from-yellow-100 to-yellow-300 border-[6px] border-yellow-600 shadow-[10px_10px_0_rgba(202,138,4,0.3)] flex flex-col items-center justify-between py-4 relative animate-float rounded-xl">
-                    <div class="w-16 h-3 bg-yellow-600 rounded-full mb-2"></div>
-                    <div class="flex gap-3">
-                        <div class="w-5 h-5 bg-red-500 border-[3px] border-red-700 rounded-full flex items-center justify-center"><div class="w-1 h-1 bg-white rounded-full"></div></div>
-                        <div class="w-5 h-5 bg-red-500 border-[3px] border-red-700 rounded-full flex items-center justify-center"><div class="w-1 h-1 bg-white rounded-full"></div></div>
-                    </div>
-                    <i data-lucide="receipt" class="w-16 h-16 text-yellow-700 drop-shadow-md"></i>
-                    <div class="text-2xl font-black text-yellow-800">$</div>
-                </div>
-            </div>`,
-            block: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-36 h-36 bg-gradient-to-br from-purple-500 to-indigo-700 rounded-2xl border-[6px] border-indigo-900 shadow-[12px_12px_0_rgba(49,46,129,0.4)] flex flex-col items-center justify-center relative transform -rotate-6 animate-float">
-                    <div class="flex gap-4 absolute top-6">
-                        <div class="w-8 h-3 bg-indigo-900 transform rotate-12"></div>
-                        <div class="w-8 h-3 bg-indigo-900 transform -rotate-12"></div>
-                    </div>
-                    <div class="flex gap-6 mt-6">
-                        <div class="w-4 h-4 bg-white rounded-full"></div>
-                        <div class="w-4 h-4 bg-white rounded-full"></div>
-                    </div>
-                    <i data-lucide="ban" class="w-16 h-16 text-pink-400 mt-2 drop-shadow-md"></i>
-                </div>
-            </div>`,
-            water: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-36 h-36 bg-gradient-to-b from-cyan-300 to-blue-500 border-[6px] border-blue-700 shadow-[10px_10px_0_rgba(29,78,216,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;">
-                    <div class="flex gap-4 mb-2">
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border-4 border-blue-800 shadow-inner"><div class="w-3 h-3 bg-blue-900 rounded-full"></div></div>
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border-4 border-blue-800 shadow-inner"><div class="w-3 h-3 bg-blue-900 rounded-full"></div></div>
-                    </div>
-                    <div class="w-10 h-4 border-b-4 border-blue-900 rounded-full mt-1"></div>
-                    <i data-lucide="droplets" class="absolute -top-6 w-12 h-12 text-cyan-200 drop-shadow-md animate-pulse"></i>
-                </div>
-            </div>`,
-            danger: `<div class="relative w-full h-full flex items-center justify-center scale-[0.9] lg:scale-[1.15]">
-                <div class="w-40 h-40 bg-gradient-to-tr from-orange-500 to-yellow-400 border-[6px] border-orange-800 shadow-[0_15px_0_rgba(154,52,18,1)] flex flex-col items-center justify-center relative transform rotate-45 rounded-2xl animate-float">
-                    <div class="transform -rotate-45 flex flex-col items-center">
-                        <div class="flex gap-4 mb-2">
-                            <i data-lucide="x" class="w-8 h-8 text-orange-900 font-black"></i>
-                            <i data-lucide="x" class="w-8 h-8 text-orange-900 font-black"></i>
-                        </div>
-                        <i data-lucide="alert-triangle" class="w-16 h-16 text-white drop-shadow-md"></i>
-                    </div>
-                </div>
-            </div>`,
-            stinky: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-40 h-36 bg-gradient-to-br from-lime-400 to-green-600 border-[6px] border-green-800 shadow-[12px_12px_0_rgba(21,128,61,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 60% 40% 70% / 60% 50% 70% 40%;">
-                    <div class="flex gap-5 mb-2">
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border-4 border-green-800 shadow-inner"><div class="w-3 h-3 bg-black rounded-full"></div></div>
-                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border-4 border-green-800 shadow-inner"><div class="w-3 h-3 bg-black rounded-full"></div></div>
-                    </div>
-                    <i data-lucide="wind" class="w-12 h-12 text-green-900 opacity-60 absolute -top-8"></i>
-                    <div class="w-10 h-8 border-b-4 border-green-900 rounded-full mt-1"></div>
-                </div>
-            </div>`,
-            slip: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
-                <div class="w-36 h-36 bg-gradient-to-b from-cyan-300 to-blue-500 border-[6px] border-blue-700 shadow-[10px_10px_0_rgba(30,58,138,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 50% 10%;">
-                    <div class="flex gap-4 mb-3">
-                        <div class="w-7 h-10 bg-white rounded-full flex items-center justify-center border-4 border-blue-800 shadow-inner"><div class="w-2 h-4 bg-black rounded-full mb-1"></div></div>
-                        <div class="w-7 h-10 bg-white rounded-full flex items-center justify-center border-4 border-blue-800 shadow-inner"><div class="w-2 h-4 bg-black rounded-full mb-1"></div></div>
-                    </div>
-                    <div class="w-12 h-10 border-t-[6px] border-blue-800 rounded-full mt-2"></div>
-                    <div class="absolute -right-4 top-4 w-8 h-8 bg-cyan-200 rounded-full border-[3px] border-cyan-500"></div>
-                    <div class="absolute -left-6 bottom-4 w-10 h-10 bg-blue-300 rounded-full border-[3px] border-blue-600"></div>
-                </div>
-            </div>`
+            cigarette: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[20dvh] h-[35dvh] max-w-[100px] max-h-[160px] bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[clamp(4px,1dvh,8px)] border-gray-400 shadow-[10px_10px_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-[10%] relative animate-float"><div class="flex gap-[1dvh] mt-[5%]"><div class="w-[1.5dvh] h-[1.5dvh] bg-gray-800 rounded-full"></div><div class="w-[1.5dvh] h-[1.5dvh] bg-gray-800 rounded-full"></div></div><div class="w-[4dvh] h-[1dvh] bg-gray-800 rounded-full mb-[15%]"></div><i data-lucide="wind" class="w-[60%] h-auto text-gray-400 absolute -top-[30%] animate-pulse"></i></div></div>`,
+            plastic: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-amber-300 to-orange-500 rounded-[20%] border-[clamp(4px,1dvh,8px)] border-amber-700 shadow-[12px_12px_0_rgba(180,83,9,0.25)] flex items-center justify-center relative transform rotate-12 animate-float"><div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div><i data-lucide="skull" class="w-[50%] h-[50%] text-amber-900 z-10 drop-shadow-md"></i></div></div>`,
+            grandpa: `<div class="relative w-full h-full flex items-center justify-center"><div class="flex flex-col items-center animate-float scale-110"><div class="w-[22dvh] h-[22dvh] max-w-[100px] max-h-[100px] bg-amber-200 rounded-full border-[clamp(4px,1dvh,8px)] border-gray-700 shadow-lg flex items-center justify-center relative z-10"><div class="flex gap-[0.5dvh] absolute top-[25%]"><div class="w-[20%] aspect-square border-[clamp(2px,0.5dvh,4px)] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-[30%] aspect-square bg-gray-800 rounded-full"></div></div><div class="w-[20%] aspect-square border-[clamp(2px,0.5dvh,4px)] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-[30%] aspect-square bg-gray-800 rounded-full"></div></div></div><div class="w-[30%] h-[10%] bg-gray-400 rounded-full absolute bottom-[15%]"></div></div><div class="w-[28dvh] h-[18dvh] max-w-[130px] max-h-[80px] bg-blue-600 rounded-t-[40%] border-[clamp(4px,1dvh,8px)] border-gray-700 shadow-xl -mt-[15%] relative z-0"></div></div></div>`,
+            ticket: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[28dvh] h-[35dvh] max-w-[130px] max-h-[160px] bg-gradient-to-b from-yellow-100 to-yellow-300 border-[clamp(4px,1dvh,8px)] border-yellow-600 shadow-[10px_10px_0_rgba(202,138,4,0.3)] flex flex-col items-center justify-between py-[8%] relative animate-float rounded-xl"><div class="w-[50%] h-[8%] bg-yellow-600 rounded-full"></div><div class="flex gap-[1dvh]"><div class="w-[2dvh] h-[2dvh] bg-red-500 border-[clamp(2px,0.5dvh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div><div class="w-[2dvh] h-[2dvh] bg-red-500 border-[clamp(2px,0.5dvh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div></div><i data-lucide="receipt" class="w-[50%] h-[50%] text-yellow-700 drop-shadow-md"></i><div class="text-[clamp(1.5rem,4dvh,2rem)] font-black text-yellow-800">$</div></div></div>`,
+            block: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-purple-500 to-indigo-700 rounded-2xl border-[clamp(4px,1dvh,8px)] border-indigo-900 shadow-[12px_12px_0_rgba(49,46,129,0.4)] flex flex-col items-center justify-center relative transform -rotate-6 animate-float"><div class="flex gap-[1dvh] absolute top-[15%]"><div class="w-[20%] h-[10%] bg-indigo-900 transform rotate-12"></div><div class="w-[20%] h-[10%] bg-indigo-900 transform -rotate-12"></div></div><div class="flex gap-[1.5dvh] mt-[15%]"><div class="w-[1.5dvh] h-[1.5dvh] bg-white rounded-full"></div><div class="w-[1.5dvh] h-[1.5dvh] bg-white rounded-full"></div></div><i data-lucide="ban" class="w-[45%] h-[45%] text-pink-400 mt-[5%] drop-shadow-md"></i></div></div>`,
+            water: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1dvh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(29,78,216,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;"><div class="flex gap-[1.5dvh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div></div><div class="w-[30%] h-[10%] border-b-[clamp(2px,0.5dvh,4px)] border-blue-900 rounded-full"></div><i data-lucide="droplets" class="absolute -top-[15%] w-[35%] h-[35%] text-cyan-200 drop-shadow-md animate-pulse"></i></div></div>`,
+            danger: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[32dvh] h-[32dvh] max-w-[160px] max-h-[160px] bg-gradient-to-tr from-orange-500 to-yellow-400 border-[clamp(4px,1dvh,8px)] border-orange-800 shadow-[0_15px_0_rgba(154,52,18,1)] flex flex-col items-center justify-center relative transform rotate-45 rounded-2xl animate-float"><div class="transform -rotate-45 flex flex-col items-center"><div class="flex gap-[1.5dvh] mb-[5%]"><i data-lucide="x" class="w-[20%] h-[20%] text-orange-900 font-black"></i><i data-lucide="x" class="w-[20%] h-[20%] text-orange-900 font-black"></i></div><i data-lucide="alert-triangle" class="w-[45%] h-[45%] text-white drop-shadow-md"></i></div></div></div>`,
+            stinky: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[35dvh] h-[30dvh] max-w-[160px] max-h-[144px] bg-gradient-to-br from-lime-400 to-green-600 border-[clamp(4px,1dvh,8px)] border-green-800 shadow-[12px_12px_0_rgba(21,128,61,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 60% 40% 70% / 60% 50% 70% 40%;"><div class="flex gap-[2dvh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div></div><i data-lucide="wind" class="w-[30%] h-[30%] text-green-900 opacity-60 absolute -top-[20%]"></i><div class="w-[25%] h-[20%] border-b-[clamp(2px,0.5dvh,4px)] border-green-900 rounded-full mt-[5%]"></div></div></div>`,
+            slip: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30dvh] h-[30dvh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1dvh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(30,58,138,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 50% 10%;"><div class="flex gap-[1.5dvh] mb-[10%]"><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5dvh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div></div><div class="w-[35%] h-[25%] border-t-[clamp(4px,1dvh,6px)] border-blue-800 rounded-full mt-[5%]"></div><div class="absolute -right-[10%] top-[10%] w-[20%] h-[20%] bg-cyan-200 rounded-full border-[clamp(2px,0.5dvh,3px)] border-cyan-500"></div><div class="absolute -left-[15%] bottom-[10%] w-[25%] h-[25%] bg-blue-300 rounded-full border-[clamp(2px,0.5dvh,3px)] border-blue-600"></div></div></div>`
         };
 
         // --- 全新注音版官方題庫 ---
@@ -310,7 +207,6 @@
             }
         ];
 
-        // --- 遊戲狀態管理 ---
         let gameState = 'start'; 
         let currentQ = 0;
         let score = 0;
@@ -326,37 +222,20 @@
             'bg-cyan-400 text-cyan-900', 'bg-blue-400 text-blue-900', 'bg-indigo-400 text-indigo-900'
         ];
 
-        // ==========================================
-        // 全新注音解析工具
-        // ==========================================
+        // --- 全新注音解析工具 ---
         const parseZhuyin = (str) => {
             if (!str) return '';
             return str.replace(/(.)\{(.*?)\}/g, (match, baseChar, zhuyinStr) => {
-                let tone = '';
-                let isLightTone = false;
-                let symbols = zhuyinStr;
-
-                if (symbols.includes('˙')) {
-                    isLightTone = true;
-                    symbols = symbols.replace('˙', '');
-                } else if (symbols.includes('ˊ')) { tone = 'ˊ'; symbols = symbols.replace('ˊ', ''); } 
-                  else if (symbols.includes('ˇ')) { tone = 'ˇ'; symbols = symbols.replace('ˇ', ''); } 
-                  else if (symbols.includes('ˋ')) { tone = 'ˋ'; symbols = symbols.replace('ˋ', ''); }
+                let tone = ''; let isLightTone = false; let symbols = zhuyinStr;
+                if (symbols.includes('˙')) { isLightTone = true; symbols = symbols.replace('˙', ''); } 
+                else if (symbols.includes('ˊ')) { tone = 'ˊ'; symbols = symbols.replace('ˊ', ''); } 
+                else if (symbols.includes('ˇ')) { tone = 'ˇ'; symbols = symbols.replace('ˇ', ''); } 
+                else if (symbols.includes('ˋ')) { tone = 'ˋ'; symbols = symbols.replace('ˋ', ''); }
 
                 let symbolsHtml = '';
                 if (isLightTone) symbolsHtml += '<span class="z-sym light-tone">˙</span>';
-                for (let i = 0; i < symbols.length; i++) {
-                    symbolsHtml += `<span class="z-sym">${symbols[i]}</span>`;
-                }
-
-                return `
-                <span class="z-word">
-                    <span class="z-base">${baseChar}</span>
-                    <span class="z-ruby">
-                        <span class="z-symbols">${symbolsHtml}</span>
-                        <span class="z-tone">${tone}</span>
-                    </span>
-                </span>`;
+                for (let i = 0; i < symbols.length; i++) { symbolsHtml += `<span class="z-sym">${symbols[i]}</span>`; }
+                return `<span class="z-word"><span class="z-base">${baseChar}</span><span class="z-ruby"><span class="z-symbols">${symbolsHtml}</span><span class="z-tone">${tone}</span></span></span>`;
             });
         };
 
@@ -370,21 +249,20 @@
             let modalHtml = '';
             if (showConfirmModal) {
                 modalHtml = `
-                <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4">
-                    <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl border-[8px] border-red-300 max-w-lg w-full text-center transform animate-zoom-in">
-                        <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center border-4 border-red-400 mx-auto mb-6">
-                            <i data-lucide="alert-triangle" class="w-12 h-12 text-red-500 animate-pulse"></i>
+                <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-[4dvh]">
+                    <div class="bg-white p-[5dvh] rounded-[3dvh] shadow-2xl border-[clamp(6px,1dvh,12px)] border-red-300 max-w-lg w-full text-center transform animate-zoom-in">
+                        <div class="w-[12dvh] h-[12dvh] bg-red-100 rounded-full flex items-center justify-center border-[clamp(4px,0.5dvh,8px)] border-red-400 mx-auto mb-[3dvh]">
+                            <i data-lucide="alert-triangle" class="w-[6dvh] h-[6dvh] text-red-500 animate-pulse"></i>
                         </div>
-                        <h3 class="text-3xl lg:text-4xl font-black text-gray-800 mb-4">確定要重新開始？</h3>
-                        <p class="text-gray-600 font-bold text-xl mb-8 bg-gray-50 py-3 rounded-2xl border-2 border-gray-200">目前的闖關紀錄將會全部消失喔！</p>
-                        <div class="flex gap-4 justify-center">
-                            <button onclick="confirmRestart(false)" class="grid-btn flex-1 bg-gray-200 text-gray-700 font-black text-2xl py-4 rounded-2xl border-4 border-gray-300 hover:bg-gray-300">取消</button>
-                            <button onclick="confirmRestart(true)" class="grid-btn flex-1 bg-red-500 text-white font-black text-2xl py-4 rounded-2xl border-4 border-red-600 hover:bg-red-600">確定重置</button>
+                        <h3 class="text-[clamp(1.8rem,4dvh,2.5rem)] font-black text-gray-800 mb-[2dvh]">確定要重新開始？</h3>
+                        <p class="text-gray-600 font-bold text-[clamp(1.2rem,2.5dvh,1.5rem)] mb-[4dvh] bg-gray-50 py-[2dvh] rounded-[2dvh] border-2 border-gray-200">目前的闖關紀錄將會全部消失喔！</p>
+                        <div class="flex gap-[2dvw] justify-center">
+                            <button onclick="confirmRestart(false)" class="grid-btn flex-1 bg-gray-200 text-gray-700 font-black text-[clamp(1.2rem,3dvh,1.8rem)] py-[2.5dvh] rounded-[2dvh] border-[clamp(2px,0.5dvh,4px)] border-gray-300 hover:bg-gray-300">取消</button>
+                            <button onclick="confirmRestart(true)" class="grid-btn flex-1 bg-red-500 text-white font-black text-[clamp(1.2rem,3dvh,1.8rem)] py-[2.5dvh] rounded-[2dvh] border-[clamp(2px,0.5dvh,4px)] border-red-600 hover:bg-red-600">確定重置</button>
                         </div>
                     </div>
                 </div>`;
             }
-
             appDiv.innerHTML = content + modalHtml;
             lucide.createIcons();
         }
@@ -414,64 +292,67 @@
             render();
         }
 
-        // 1. 首頁 (三列排版、加入盾牌圖示、自適應防卡視窗)
+        // --- 1. 首頁 (高度自適應 Flex 液態排版) ---
         function renderStart() {
             return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-md rounded-[2.5rem] shadow-2xl border-[10px] border-white p-6 md:p-10 flex flex-col md:flex-row items-center justify-center gap-6 lg:gap-12 animate-zoom-in">
+            <div class="w-full h-full bg-white/95 backdrop-blur-md rounded-[clamp(1.5rem,4dvh,3rem)] shadow-2xl border-[clamp(6px,1dvh,12px)] border-white p-[clamp(1.5rem,4dvh,3rem)] flex flex-row items-center justify-center gap-[4dvw] animate-zoom-in">
                 <!-- 左側：視覺插圖 -->
-                <div class="md:w-5/12 flex items-center justify-center animate-bounce-slow h-full min-h-0">
-                    <div class="aspect-square w-full max-h-[50dvh] max-w-[280px] lg:max-w-[340px] bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[12px] border-white relative">
-                        <i data-lucide="leaf" class="w-24 h-24 lg:w-32 lg:h-32 text-white"></i>
-                        <i data-lucide="sparkles" class="w-10 h-10 lg:w-14 lg:h-14 text-yellow-300 absolute top-4 right-4 animate-pulse"></i>
+                <div class="w-5/12 flex items-center justify-center animate-bounce-slow h-full">
+                    <div class="h-[clamp(200px,60dvh,400px)] aspect-square bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[clamp(6px,1.5dvh,12px)] border-white relative">
+                        <i data-lucide="leaf" class="w-[40%] h-[40%] text-white"></i>
+                        <i data-lucide="sparkles" class="w-[15%] h-[15%] text-yellow-300 absolute top-[15%] right-[15%] animate-pulse"></i>
                     </div>
                 </div>
                 <!-- 右側：標題與按鈕 -->
-                <div class="md:w-7/12 flex flex-col items-center md:items-start justify-center h-full overflow-y-auto no-scrollbar py-2">
-                    <div class="flex items-center justify-center md:justify-start gap-4 mb-4 bg-white shadow-sm border-2 border-gray-100 rounded-full py-2 px-5 lg:py-3 lg:px-6 w-max mx-auto md:mx-0 flex-shrink-0">
-                        <img src="image_1c45dd.png" alt="南投環保局標誌" class="w-10 h-10 lg:w-14 lg:h-14 object-contain" />
-                        <h2 class="text-green-800 font-black text-xl lg:text-3xl tracking-widest pt-1">南投縣政府環境保護局</h2>
+                <div class="w-7/12 flex flex-col items-start justify-between h-full py-[1dvh]">
+                    
+                    <!-- 認證區 -->
+                    <div class="flex items-center gap-[1.5dvw] bg-white shadow-sm border-2 border-gray-100 rounded-full py-[1.5dvh] px-[2dvw] w-max">
+                        <img src="image_1c45dd.png" alt="南投環保局標誌" class="h-[clamp(30px,6dvh,60px)] object-contain" />
+                        <h2 class="text-green-800 font-black text-[clamp(1rem,2.5dvh,1.8rem)] tracking-widest pt-1">南投縣政府環境保護局</h2>
                     </div>
                     
                     <!-- 標題與盾牌圖示 -->
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-blue-800 mb-6 leading-tight drop-shadow-md text-center md:text-left flex flex-col items-center md:items-start flex-shrink-0">
-                        <div class="flex items-center justify-center md:justify-start gap-2 lg:gap-3">
-                            環保小尖兵 <i data-lucide="shield-check" class="w-10 h-10 lg:w-14 lg:h-14 text-green-500 drop-shadow-sm pb-1"></i>
+                    <h1 class="font-black text-blue-800 leading-tight drop-shadow-md flex flex-col items-start w-full text-[clamp(2.5rem,6.5dvh,5rem)]">
+                        <div class="flex items-center gap-[1.5dvw]">
+                            環保小尖兵 <i data-lucide="shield-check" class="h-[clamp(2.5rem,6.5dvh,5rem)] w-auto text-green-500 drop-shadow-sm pb-1"></i>
                         </div>
-                        <span class="text-orange-500 text-3xl md:text-4xl lg:text-5xl mt-2 block">沙包挑戰賽！</span>
+                        <span class="text-orange-500 text-[clamp(2rem,5dvh,3.5rem)] mt-[1dvh] block">沙包挑戰賽！</span>
                     </h1>
                     
                     <!-- 三列置中對齊排版風格 -->
-                    <div class="w-full bg-blue-50/80 p-5 lg:p-7 rounded-[2rem] border-[4px] border-dashed border-blue-300 shadow-inner mb-6 flex-shrink-0 relative flex flex-col justify-center">
-                        <h3 class="text-center font-black text-2xl lg:text-3xl text-orange-600 mb-4 tracking-widest drop-shadow-sm">
+                    <div class="w-full bg-blue-50/80 p-[clamp(1.5rem,3.5dvh,2.5rem)] rounded-[clamp(1.5rem,3dvh,2rem)] border-[clamp(3px,0.5dvh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col justify-center gap-[1.5dvh]">
+                        <h3 class="text-center font-black text-[clamp(1.5rem,3.5dvh,2rem)] text-orange-600 tracking-widest drop-shadow-sm">
                             ~~ 歡迎來到敦和國小 ~~
                         </h3>
-                        <div class="w-full flex flex-col gap-2 md:gap-3 items-center justify-center">
-                            <p class="text-gray-800 font-black text-xl lg:text-2xl text-center">快拿起手上的沙包</p>
-                            <p class="text-gray-800 font-black text-xl lg:text-2xl text-center">丟向九宮格選擇題目</p>
-                            <p class="text-blue-700 font-black text-2xl lg:text-3xl text-center drop-shadow-sm mt-1">一起打敗污染怪獸吧!!!</p>
+                        <div class="w-full flex flex-col gap-[1dvh] items-center justify-center">
+                            <p class="text-gray-800 font-black text-[clamp(1.2rem,3dvh,1.8rem)]">快拿起手上的沙包</p>
+                            <p class="text-gray-800 font-black text-[clamp(1.2rem,3dvh,1.8rem)]">丟向九宮格選擇題目</p>
+                            <p class="text-blue-700 font-black text-[clamp(1.5rem,3.5dvh,2rem)] drop-shadow-sm mt-[0.5dvh]">一起打敗污染怪獸吧!!!</p>
                         </div>
                     </div>
 
-                    <button onclick="handleStart()" class="grid-btn flex-shrink-0 w-[80%] md:w-auto bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-2xl lg:text-3xl py-3 lg:py-5 px-8 lg:px-12 rounded-full flex items-center justify-center gap-3 cursor-pointer hover:from-green-500 hover:to-green-700 mx-auto md:mx-0">
-                        <i data-lucide="play-circle" class="w-8 h-8 lg:w-10 lg:h-10"></i> 開始挑戰！
+                    <!-- 按鈕 -->
+                    <button onclick="handleStart()" class="grid-btn bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-[clamp(1.5rem,3.5dvh,2.5rem)] py-[clamp(1.2rem,2.5dvh,2rem)] px-[clamp(2rem,5dvw,4rem)] rounded-full flex items-center justify-center gap-[1dvw] hover:from-green-500 hover:to-green-700">
+                        <i data-lucide="play-circle" class="w-[clamp(2rem,4.5dvh,3.5rem)] h-[clamp(2rem,4.5dvh,3.5rem)]"></i> 開始挑戰！
                     </button>
                 </div>
             </div>
             `;
         }
 
-        // 2. 九宮格選單 (防掉字處理與防破版滑動)
+        // --- 2. 九宮格選單 (完美綁定高寬比不溢出) ---
         function renderGrid() {
             let gridHtml = answeredStatus.map((status, i) => {
                 let isDone = status !== null;
                 let btnColor = isDone ? 'bg-gray-200 text-gray-400 disabled' : gridColors[i];
-                let contentHtml = `<span class="text-5xl md:text-6xl lg:text-7xl font-black drop-shadow-lg">${i + 1}</span>`;
+                let contentHtml = `<span class="text-[clamp(3rem,8dvh,6rem)] font-black drop-shadow-lg">${i + 1}</span>`;
                 if (isDone) {
-                    if (status === true) contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-16 h-16 lg:w-20 lg:h-20 text-green-500 opacity-80 rotate-12"></i></div>`;
-                    else contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="x-circle" class="w-16 h-16 lg:w-20 lg:h-20 text-red-400 opacity-80 -rotate-12"></i></div>`;
+                    if (status === true) contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-[45%] h-[45%] text-green-500 opacity-80 rotate-12"></i></div>`;
+                    else contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="x-circle" class="w-[45%] h-[45%] text-red-400 opacity-80 -rotate-12"></i></div>`;
                 }
                 return `
-                <button onclick="selectQuestion(${i})" class="grid-btn relative aspect-square rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center border-4 border-white/60 overflow-hidden group ${btnColor}">
+                <button onclick="selectQuestion(${i})" class="grid-btn relative w-full h-full rounded-[clamp(1rem,3dvh,2rem)] flex items-center justify-center border-[clamp(3px,0.5dvh,6px)] border-white/60 overflow-hidden group ${btnColor}">
                     ${isDone ? '' : '<div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>'}
                     ${contentHtml}
                 </button>
@@ -479,47 +360,45 @@
             }).join('');
 
             return `
-            <div class="w-full h-full flex flex-col md:flex-row gap-4 lg:gap-10 animate-fade-in relative min-h-0">
+            <div class="w-full h-full flex flex-row gap-[3dvw] animate-fade-in">
+                
                 <!-- 左側狀態 -->
-                <div class="md:w-1/3 h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-4 lg:p-8 rounded-[2.5rem] shadow-2xl border-[8px] border-white relative overflow-y-auto no-scrollbar gap-2">
-                    <div class="flex flex-col items-center justify-center gap-3 mb-2 bg-gradient-to-b from-green-50 to-blue-50 px-2 lg:px-4 py-4 rounded-[1.5rem] border-[3px] border-white shadow-md flex-shrink-0 w-full mx-auto">
-                        <div class="flex items-center justify-center gap-2 lg:gap-3 w-full">
-                            <i data-lucide="sparkles" class="w-7 h-7 lg:w-9 lg:h-9 text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
-                            <h2 class="text-green-800 font-black text-xl lg:text-3xl tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
+                <div class="w-[35%] h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-[clamp(1rem,3.5dvh,2.5rem)] rounded-[clamp(1.5rem,4dvh,3rem)] shadow-2xl border-[clamp(6px,1dvh,12px)] border-white relative">
+                    <div class="flex flex-col items-center justify-center gap-[1.5dvh] bg-gradient-to-b from-green-50 to-blue-50 px-[2dvw] py-[2dvh] rounded-[clamp(1rem,3dvh,2rem)] border-[clamp(2px,0.5dvh,4px)] border-white shadow-md flex-shrink-0 w-full mx-auto">
+                        <div class="flex items-center justify-center gap-[1dvw] w-full">
+                            <i data-lucide="sparkles" class="w-[clamp(1.5rem,3.5dvh,2.5rem)] h-auto text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
+                            <h2 class="text-green-800 font-black text-[clamp(1.2rem,3dvh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
                         </div>
                         <div class="w-[80%] h-[2px] bg-gray-300/50 rounded-full"></div>
-                        <div class="flex items-center justify-center gap-2 lg:gap-3 w-full">
-                            <h2 class="text-blue-800 font-black text-xl lg:text-3xl tracking-wider drop-shadow-sm text-center whitespace-nowrap">無菸好環境</h2>
-                            <i data-lucide="droplets" class="w-7 h-7 lg:w-9 lg:h-9 text-cyan-500 drop-shadow-sm animate-bounce-slow flex-shrink-0"></i>
+                        <div class="flex items-center justify-center gap-[1dvw] w-full">
+                            <h2 class="text-blue-800 font-black text-[clamp(1.2rem,3dvh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">無菸好環境</h2>
+                            <i data-lucide="droplets" class="w-[clamp(1.5rem,3.5dvh,2.5rem)] h-auto text-cyan-500 drop-shadow-sm animate-bounce-slow flex-shrink-0"></i>
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-center justify-center flex-1 my-2 min-h-[120px]">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex items-center justify-center border-4 border-green-400 shadow-md mb-2 lg:mb-4">
-                            <i data-lucide="leaf" class="w-8 h-8 lg:w-10 lg:h-10 text-green-500"></i>
+                    <div class="flex flex-col items-center justify-center flex-1 min-h-0">
+                        <div class="w-[clamp(4rem,10dvh,6rem)] h-[clamp(4rem,10dvh,6rem)] bg-green-100 rounded-full flex items-center justify-center border-[clamp(3px,0.5dvh,6px)] border-green-400 shadow-md mb-[2dvh]">
+                            <i data-lucide="leaf" class="w-[45%] h-[45%] text-green-500"></i>
                         </div>
-                        <h2 class="text-2xl lg:text-3xl font-black text-gray-800 mb-2">請選題！</h2>
-                        <p class="text-green-600 font-bold text-lg lg:text-xl">目前得分：<span class="text-3xl lg:text-4xl text-orange-500 ml-2 drop-shadow-sm">${score * 100}</span></p>
+                        <h2 class="text-[clamp(1.8rem,4dvh,2.5rem)] font-black text-gray-800 mb-[1dvh]">請選題！</h2>
+                        <p class="text-green-600 font-bold text-[clamp(1.2rem,3dvh,1.5rem)]">目前得分：<span class="text-[clamp(2rem,5dvh,3rem)] text-orange-500 ml-2 drop-shadow-sm">${score * 100}</span></p>
                     </div>
 
-                    <!-- 底部提示區與重新開始 -->
-                    <div class="flex flex-col gap-3 flex-shrink-0">
-                        <div class="bg-blue-50/80 p-3 lg:p-5 rounded-[1.5rem] border-4 border-dashed border-blue-300 flex flex-col items-center justify-center">
-                            <i data-lucide="target" class="w-8 h-8 lg:w-12 lg:h-12 text-blue-500 mb-1 lg:mb-2 animate-bounce"></i>
-                            <p class="text-sm lg:text-lg font-bold text-center text-gray-700 leading-snug">
-                                沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span>
-                            </p>
+                    <div class="flex flex-col gap-[2dvh] flex-shrink-0">
+                        <div class="bg-blue-50/80 p-[2dvh] rounded-[clamp(1rem,3dvh,2rem)] border-[clamp(3px,0.5dvh,6px)] border-dashed border-blue-300 flex flex-col items-center justify-center">
+                            <i data-lucide="target" class="w-[clamp(2rem,5dvh,3.5rem)] h-auto text-blue-500 mb-[1dvh] animate-bounce"></i>
+                            <p class="text-[clamp(1rem,2.5dvh,1.5rem)] font-bold text-center text-gray-700 leading-snug">沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span></p>
                         </div>
-                        <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[1.5rem] py-3 lg:py-4 shadow-sm border-4 border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-black">
-                            <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
-                            <span class="text-lg lg:text-xl">重新開始</span>
+                        <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[clamp(1rem,3dvh,2rem)] py-[2dvh] shadow-sm border-[clamp(3px,0.5dvh,6px)] border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-[1dvw] font-black">
+                            <i data-lucide="rotate-ccw" class="w-[clamp(1.2rem,3dvh,2rem)] h-auto"></i>
+                            <span class="text-[clamp(1.2rem,3dvh,2rem)]">重新開始</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- 右側九宮格 -->
-                <div class="md:w-2/3 h-full bg-white/70 backdrop-blur-md p-4 lg:p-10 rounded-[2.5rem] shadow-2xl border-[8px] border-white flex items-center justify-center overflow-y-auto no-scrollbar">
-                    <div class="w-full max-h-[85dvh] max-w-[65vh] md:max-w-[600px] grid grid-cols-3 gap-3 lg:gap-6 mx-auto aspect-square">
+                <div class="w-[65%] h-full bg-white/70 backdrop-blur-md p-[clamp(1.5rem,4dvh,3rem)] rounded-[clamp(1.5rem,4dvh,3rem)] shadow-2xl border-[clamp(6px,1dvh,12px)] border-white flex items-center justify-center">
+                    <div class="h-full aspect-square grid grid-cols-3 gap-[2.5dvh]">
                         ${gridHtml}
                     </div>
                 </div>
@@ -527,7 +406,7 @@
             `;
         }
 
-        // 3. 遊戲答題中 (加入防破版捲動保護)
+        // --- 3. 遊戲答題中 (智慧限縮字體與間距) ---
         function renderPlaying() {
             const q = questions[currentQ];
             let optionsHtml = q.options.map((opt, idx) => {
@@ -535,9 +414,9 @@
                     ? 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400 grid-btn cursor-pointer' 
                     : (idx === q.correctAnswer ? 'bg-green-100 border-green-500 text-green-800 shadow-inner' : 'bg-gray-100 border-gray-200 text-gray-400');
                 return `
-                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-3 lg:p-4 rounded-[1.5rem] font-black text-base lg:text-lg xl:text-xl border-[3px] lg:border-[4px] relative flex justify-between items-center flex-shrink-0 ${btnStateClass}">
+                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-[clamp(0.8rem,2.2dvh,1.5rem)] rounded-[clamp(1rem,3dvh,2rem)] font-black text-[clamp(1rem,2.8dvh,1.5rem)] border-[clamp(3px,0.5dvh,6px)] relative flex justify-between items-center ${btnStateClass}">
                     <span class="zhuyin-text flex-1 pr-2">${parseZhuyin(opt)}</span>
-                    ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-6 h-6 opacity-30 flex-shrink-0 ml-1"></i>` : ''}
+                    ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-[clamp(1.5rem,4dvh,2.5rem)] h-auto opacity-30 flex-shrink-0 ml-1"></i>` : ''}
                 </button>
                 `;
             }).join('');
@@ -545,24 +424,24 @@
             let feedbackHtml = '';
             if (feedback) {
                 feedbackHtml = `
-                <div class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-sm rounded-[2rem] animate-fade-in">
-                    <div class="bg-white w-full max-w-2xl max-h-[90dvh] rounded-[2.5rem] p-6 lg:p-8 shadow-2xl flex flex-col items-center text-center transform animate-zoom-in border-[8px] lg:border-[10px] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'} overflow-y-auto no-scrollbar">
+                <div class="absolute inset-0 z-50 flex items-center justify-center p-[4dvh] bg-gray-900/70 backdrop-blur-sm rounded-[clamp(1.5rem,4dvh,3rem)] animate-fade-in">
+                    <div class="bg-white w-[80%] max-w-2xl h-[85dvh] rounded-[clamp(2rem,5dvh,3rem)] p-[clamp(1.5rem,4dvh,3rem)] shadow-2xl flex flex-col items-center justify-evenly text-center transform animate-zoom-in border-[clamp(6px,1dvh,12px)] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
                         ${feedback.isCorrect ? `
-                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex flex-shrink-0 items-center justify-center mb-3 lg:mb-4 border-[4px] border-green-400 animate-bounce">
-                                <i data-lucide="check-circle" class="w-10 h-10 lg:w-12 lg:h-12 text-green-500"></i>
+                            <div class="w-[clamp(4rem,10dvh,6rem)] h-[clamp(4rem,10dvh,6rem)] bg-green-100 rounded-full flex flex-shrink-0 items-center justify-center border-[clamp(3px,0.5dvh,6px)] border-green-400 animate-bounce">
+                                <i data-lucide="check-circle" class="w-[50%] h-[50%] text-green-500"></i>
                             </div>
-                            <h3 class="text-3xl lg:text-4xl font-black text-green-600 mb-3 lg:mb-4 flex-shrink-0">攻擊成功！</h3>
+                            <h3 class="text-[clamp(2rem,5dvh,3rem)] font-black text-green-600 flex-shrink-0">攻擊成功！</h3>
                         ` : `
-                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-red-100 rounded-full flex flex-shrink-0 items-center justify-center mb-3 lg:mb-4 border-[4px] border-red-400">
-                                <i data-lucide="x-circle" class="w-10 h-10 lg:w-12 lg:h-12 text-red-500"></i>
+                            <div class="w-[clamp(4rem,10dvh,6rem)] h-[clamp(4rem,10dvh,6rem)] bg-red-100 rounded-full flex flex-shrink-0 items-center justify-center border-[clamp(3px,0.5dvh,6px)] border-red-400">
+                                <i data-lucide="x-circle" class="w-[50%] h-[50%] text-red-500"></i>
                             </div>
-                            <h3 class="text-3xl lg:text-4xl font-black text-red-600 mb-3 lg:mb-4 flex-shrink-0">哎呀！打歪了</h3>
+                            <h3 class="text-[clamp(2rem,5dvh,3rem)] font-black text-red-600 flex-shrink-0">哎呀！打歪了</h3>
                         `}
-                        <div class="w-full bg-gray-50 p-4 rounded-2xl border-2 border-gray-200 mb-6 text-left flex-1 min-h-0 overflow-y-auto no-scrollbar">
-                            <p class="text-gray-700 font-bold text-base lg:text-lg xl:text-xl leading-relaxed zhuyin-text">${parseZhuyin(feedback.text)}</p>
+                        <div class="w-full bg-gray-50 p-[clamp(1rem,3dvh,2rem)] rounded-[clamp(1rem,3dvh,2rem)] border-[clamp(2px,0.5dvh,4px)] border-gray-200 text-left flex-shrink-0">
+                            <p class="text-gray-700 font-bold text-[clamp(1.2rem,3dvh,1.8rem)] leading-relaxed zhuyin-text">${parseZhuyin(feedback.text)}</p>
                         </div>
-                        <button onclick="handleNext()" class="grid-btn w-full py-3 lg:py-4 rounded-full font-black text-xl lg:text-2xl text-white shadow-lg flex-shrink-0 flex items-center justify-center gap-3 ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer">
-                            返回九宮格 <i data-lucide="arrow-right-circle" class="w-6 h-6 lg:w-8 lg:h-8"></i>
+                        <button onclick="handleNext()" class="grid-btn w-full py-[clamp(1.2rem,3dvh,2rem)] rounded-full font-black text-[clamp(1.5rem,3.5dvh,2rem)] text-white shadow-lg flex items-center justify-center gap-[1dvw] ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer flex-shrink-0">
+                            返回九宮格 <i data-lucide="arrow-right-circle" class="w-[clamp(1.5rem,4dvh,2.5rem)] h-auto"></i>
                         </button>
                     </div>
                 </div>
@@ -572,40 +451,40 @@
             let villainClass = feedback ? (feedback.isCorrect ? 'scale-75 rotate-12 opacity-30 grayscale blur-md' : 'scale-110 -rotate-12 drop-shadow-2xl') : '';
 
             return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border-[8px] lg:border-[10px] border-white p-4 lg:p-6 flex flex-col md:flex-row gap-4 lg:gap-8 animate-slide-up relative overflow-hidden min-h-0">
-                <!-- 左側怪獸 -->
-                <div class="md:w-1/3 lg:w-[28%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[2rem] p-4 lg:p-6 flex flex-col items-center justify-between border-[6px] lg:border-8 border-gray-300 relative shadow-inner overflow-hidden flex-shrink-0">
-                    <div class="absolute top-4 left-4 bg-blue-600 text-white font-black px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl text-sm shadow-md border-2 border-blue-400 z-20 flex items-center gap-1.5">
-                        <i data-lucide="hash" class="w-4 h-4 lg:w-5 lg:h-5"></i> 題 ${currentQ + 1}
+            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4dvh,3rem)] shadow-2xl border-[clamp(6px,1dvh,12px)] border-white p-[clamp(1rem,3dvh,2.5rem)] flex flex-row gap-[3dvw] animate-slide-up relative">
+                <!-- 左側：怪獸展示區 -->
+                <div class="w-[30%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[clamp(1.5rem,4dvh,3rem)] p-[clamp(1rem,3dvh,2rem)] flex flex-col items-center justify-between border-[clamp(4px,0.8dvh,10px)] border-gray-300 relative shadow-inner">
+                    <div class="absolute top-[2dvh] left-[2dvw] bg-blue-600 text-white font-black px-[1dvw] py-[1dvh] rounded-xl text-[clamp(0.8rem,2dvh,1.2rem)] shadow-md border-2 border-blue-400 z-20 flex items-center gap-[0.5dvw]">
+                        <i data-lucide="hash" class="w-[clamp(1rem,2.5dvh,1.5rem)] h-auto"></i> 題 ${currentQ + 1}
                     </div>
                     
-                    <div class="flex-1 w-full min-h-0 flex items-center justify-center my-2 relative">
-                        <div class="absolute w-[85%] aspect-square bg-gray-300/40 rounded-full blur-xl transform translate-y-12"></div>
+                    <div class="flex-1 w-full min-h-0 flex items-center justify-center relative">
+                        <div class="absolute w-[85%] aspect-square bg-gray-300/40 rounded-full blur-xl transform translate-y-[10%]"></div>
                         <div class="w-full h-full flex items-center justify-center transition-all duration-700 ${villainClass} relative z-10">
                             ${q.villainIcon}
                         </div>
                     </div>
                     
-                    <div class="bg-white/90 px-3 py-2 lg:px-6 lg:py-4 rounded-[1.5rem] border-4 border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
-                        <span class="text-xs lg:text-sm font-bold text-gray-500 block mb-1">遇到污染怪獸：</span>
-                        <span class="text-xl lg:text-3xl font-black text-red-600 drop-shadow-sm line-clamp-1">${q.villain}</span>
+                    <div class="bg-white/90 px-[1.5dvw] py-[1.5dvh] rounded-[clamp(1rem,3dvh,2rem)] border-[clamp(3px,0.5dvh,6px)] border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
+                        <span class="text-[clamp(0.8rem,2dvh,1.2rem)] font-bold text-gray-500 block mb-[0.5dvh]">遇到污染怪獸：</span>
+                        <span class="text-[clamp(1.5rem,3.5dvh,2.5rem)] font-black text-red-600 drop-shadow-sm">${q.villain}</span>
                     </div>
                 </div>
 
-                <!-- 右側問答區 (加入防破版機制) -->
-                <div class="md:w-2/3 lg:w-[72%] h-full flex flex-col justify-between py-1 min-h-0 gap-2">
-                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-3 lg:p-4 rounded-[1.5rem] border-l-[6px] border-amber-400 shadow-sm text-sm lg:text-base flex items-center gap-2 lg:gap-3 overflow-y-auto no-scrollbar max-h-[20vh]">
-                        <i data-lucide="alert-circle" class="w-6 h-6 lg:w-8 lg:h-8 text-amber-600 flex-shrink-0"></i>
-                        <span class="leading-relaxed zhuyin-text w-full">${parseZhuyin(q.scenario)}</span>
+                <!-- 右側：問答區 (靠 Flex 智慧擠壓分配) -->
+                <div class="w-[70%] h-full flex flex-col justify-between py-0">
+                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-[clamp(1rem,2.5dvh,1.5rem)] rounded-[clamp(1rem,3dvh,2rem)] border-l-[clamp(4px,0.8dvh,8px)] border-amber-400 shadow-sm flex items-center gap-[1dvw]">
+                        <i data-lucide="alert-circle" class="w-[clamp(1.5rem,4dvh,2.5rem)] h-auto text-amber-600 flex-shrink-0"></i>
+                        <span class="leading-relaxed zhuyin-text w-full text-[clamp(1rem,2.5dvh,1.5rem)]">${parseZhuyin(q.scenario)}</span>
                     </div>
                     
-                    <div class="flex-1 min-h-0 bg-blue-50 p-3 lg:p-5 rounded-[1.5rem] lg:rounded-[2rem] border-4 border-blue-200 shadow-inner flex items-center justify-center text-center overflow-y-auto no-scrollbar">
-                        <h2 class="text-lg md:text-xl lg:text-2xl font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full">
+                    <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,3dvh,2.5rem)] rounded-[clamp(1.5rem,4dvh,3rem)] border-[clamp(3px,0.5dvh,6px)] border-blue-200 shadow-inner flex items-center justify-center text-center my-[2dvh]">
+                        <h2 class="text-[clamp(1.2rem,3.5dvh,2.2rem)] font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full">
                             ${parseZhuyin(q.question)}
                         </h2>
                     </div>
                     
-                    <div class="flex-shrink-0 grid gap-2 lg:gap-3 overflow-y-auto no-scrollbar max-h-[40vh]">
+                    <div class="flex-shrink-0 flex flex-col gap-[1.5dvh]">
                         ${optionsHtml}
                     </div>
                 </div>
@@ -614,7 +493,7 @@
             `;
         }
 
-        // 4. 結算畫面
+        // --- 4. 結算畫面 (液態排版分配) ---
         function renderResult() {
             let title = score === 9 ? "完美通關神射手！" : (score >= 6 ? "優秀環保尖兵！" : "再接再厲小尖兵！");
             let message = score === 9 ? "太厲害了！你消滅了所有的污染怪獸，成功守護了敦和國小！" : 
@@ -625,10 +504,10 @@
                          (score >= 6 ? "bg-gradient-to-b from-blue-50 to-cyan-100 border-blue-300" : "bg-gradient-to-b from-gray-50 to-gray-200 border-gray-300");
             
             let starCount = score === 9 ? 3 : (score >= 6 ? 2 : 1);
-            let starsHtml = '<div class="flex justify-center items-end gap-2 mb-4">';
+            let starsHtml = '<div class="flex justify-center items-end gap-[1dvw] mb-[2dvh]">';
             for(let i=0; i<3; i++) {
                 let isCenter = i === 1;
-                let sizeClass = isCenter ? 'w-16 h-16 lg:w-20 lg:h-20 mb-4' : 'w-12 h-12 lg:w-14 lg:h-14';
+                let sizeClass = isCenter ? 'w-[clamp(4rem,10dvh,6rem)] h-auto mb-[2dvh]' : 'w-[clamp(3rem,8dvh,4.5rem)] h-auto';
                 let colorClass = i < starCount ? 'text-yellow-400' : 'text-gray-300 opacity-50';
                 let fillStyle = i < starCount ? 'fill: currentColor' : 'fill: none';
                 starsHtml += `<i data-lucide="star" class="${sizeClass} ${colorClass} drop-shadow-md animate-bounce-slow" style="animation-delay: ${i*0.2}s; ${fillStyle}"></i>`;
@@ -636,58 +515,58 @@
             starsHtml += '</div>';
 
             return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[3rem] shadow-2xl border-[10px] border-white p-5 lg:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 animate-zoom-in relative overflow-hidden min-h-0">
-                <div class="absolute top-[-20%] right-[-10%] w-96 h-96 bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4dvh,3rem)] shadow-2xl border-[clamp(6px,1dvh,12px)] border-white p-[clamp(1.5rem,4dvh,3rem)] flex flex-row gap-[4dvw] animate-zoom-in relative">
+                <div class="absolute top-[-20%] right-[-10%] w-[30dvh] h-[30dvh] bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute bottom-[-10%] left-[-10%] w-[25dvh] h-[25dvh] bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
 
                 <!-- 左側：榮譽勳章與評價區 -->
-                <div class="md:w-5/12 h-full rounded-[2.5rem] p-4 lg:p-6 flex flex-col items-center justify-center border-8 ${badgeBg} relative shadow-inner overflow-hidden flex-shrink-0">
-                    <i data-lucide="sparkles" class="absolute top-8 left-8 w-8 h-8 lg:w-10 lg:h-10 text-yellow-400 animate-pulse opacity-80"></i>
-                    <i data-lucide="sparkles" class="absolute bottom-12 right-8 w-10 h-10 lg:w-12 lg:h-12 text-yellow-500 animate-pulse opacity-80"></i>
+                <div class="w-5/12 h-full rounded-[clamp(1.5rem,4dvh,3rem)] p-[clamp(1.5rem,4dvh,3rem)] flex flex-col items-center justify-evenly border-[clamp(6px,1dvh,12px)] ${badgeBg} relative shadow-inner">
+                    <i data-lucide="sparkles" class="absolute top-[10%] left-[10%] w-[clamp(2rem,5dvh,3rem)] h-auto text-yellow-400 animate-pulse opacity-80"></i>
+                    <i data-lucide="sparkles" class="absolute bottom-[15%] right-[10%] w-[clamp(2.5rem,6dvh,4rem)] h-auto text-yellow-500 animate-pulse opacity-80"></i>
                     ${starsHtml}
-                    <div class="relative animate-float my-2">
-                        <i data-lucide="award" class="w-36 h-36 lg:w-48 lg:h-48 ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
-                        <i data-lucide="award" class="absolute inset-0 w-36 h-36 lg:w-48 lg:h-48 ${badgeColor}"></i>
-                        <div class="absolute inset-0 flex items-center justify-center flex-col pt-5 lg:pt-8">
-                            <span class="text-white font-black text-3xl lg:text-5xl drop-shadow-md">${score * 100}</span>
+                    <div class="relative animate-float my-[1dvh]">
+                        <i data-lucide="award" class="w-[clamp(150px,35dvh,250px)] h-auto ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
+                        <i data-lucide="award" class="absolute inset-0 w-[clamp(150px,35dvh,250px)] h-auto ${badgeColor}"></i>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col pt-[15%]">
+                            <span class="text-white font-black text-[clamp(2.5rem,6dvh,4.5rem)] drop-shadow-md">${score * 100}</span>
                         </div>
                     </div>
-                    <div class="mt-4 lg:mt-6 bg-white/90 px-4 py-3 lg:px-6 lg:py-4 rounded-3xl border-4 border-white shadow-lg z-10 w-[95%] text-center relative">
-                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">最終稱號</div>
-                        <h2 class="text-2xl lg:text-4xl font-black text-gray-800 drop-shadow-sm tracking-wide mt-2">${title}</h2>
+                    <div class="bg-white/90 px-[2dvw] py-[1.5dvh] rounded-[clamp(1.5rem,3dvh,2.5rem)] border-[clamp(3px,0.5dvh,6px)] border-white shadow-lg z-10 w-[95%] text-center relative mt-[2dvh]">
+                        <div class="absolute -top-[1.5dvh] left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-[clamp(0.8rem,2dvh,1.2rem)] font-bold px-[1dvw] py-[0.5dvh] rounded-full whitespace-nowrap">最終稱號</div>
+                        <h2 class="text-[clamp(1.8rem,4dvh,2.8rem)] font-black text-gray-800 drop-shadow-sm tracking-wide mt-[1dvh]">${title}</h2>
                     </div>
                 </div>
 
                 <!-- 右側：官方認證與詳細數據區 -->
-                <div class="md:w-7/12 h-full flex flex-col justify-between py-2 overflow-y-auto no-scrollbar gap-2">
-                    <div class="flex items-center justify-center md:justify-start gap-3 mb-2 bg-gray-50/80 px-4 py-2 lg:px-6 lg:py-3 rounded-full border-2 border-gray-200 shadow-sm w-max mx-auto md:mx-0 flex-shrink-0">
-                        <img src="image_1c45dd.png" class="w-8 h-8 lg:w-12 lg:h-12 object-contain" />
-                        <h3 class="text-lg lg:text-2xl font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
+                <div class="w-7/12 h-full flex flex-col justify-between py-0">
+                    <div class="flex items-center gap-[1.5dvw] bg-gray-50/80 px-[2dvw] py-[1.5dvh] rounded-full border-2 border-gray-200 shadow-sm w-max flex-shrink-0">
+                        <img src="image_1c45dd.png" class="h-[clamp(30px,6dvh,60px)] object-contain" />
+                        <h3 class="text-[clamp(1rem,2.5dvh,1.8rem)] font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
                     </div>
 
-                    <div class="flex-1 min-h-0 bg-blue-50 p-4 lg:p-8 rounded-[2.5rem] border-4 border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center overflow-y-auto no-scrollbar">
-                        <div class="flex items-center gap-2 lg:gap-3 mb-3 lg:mb-4 flex-shrink-0">
-                            <i data-lucide="party-popper" class="w-8 h-8 lg:w-10 lg:h-10 text-orange-500 animate-bounce"></i>
-                            <h3 class="text-xl lg:text-2xl font-black text-blue-800">闖關結果報告</h3>
-                            <i data-lucide="party-popper" class="w-8 h-8 lg:w-10 lg:h-10 text-orange-500 animate-bounce transform -scale-x-100"></i>
+                    <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,4dvh,3rem)] rounded-[clamp(1.5rem,4dvh,3rem)] border-[clamp(3px,0.5dvh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center my-[2dvh]">
+                        <div class="flex items-center gap-[1dvw] mb-[2.5dvh] flex-shrink-0">
+                            <i data-lucide="party-popper" class="w-[clamp(2rem,5dvh,3.5rem)] h-auto text-orange-500 animate-bounce"></i>
+                            <h3 class="text-[clamp(1.5rem,3.5dvh,2.5rem)] font-black text-blue-800">闖關結果報告</h3>
+                            <i data-lucide="party-popper" class="w-[clamp(2rem,5dvh,3.5rem)] h-auto text-orange-500 animate-bounce transform -scale-x-100"></i>
                         </div>
                         
-                        <p class="text-lg lg:text-2xl font-bold text-gray-700 leading-snug text-center mb-6 px-2 lg:px-4 flex-shrink-0">${message}</p>
+                        <p class="text-[clamp(1.2rem,3dvh,2rem)] font-bold text-gray-700 leading-snug text-center mb-[4dvh] flex-shrink-0">${message}</p>
 
-                        <div class="flex w-full justify-center gap-4 lg:gap-12 flex-shrink-0">
-                            <div class="bg-white px-4 py-3 lg:px-6 lg:py-5 rounded-[1.5rem] border-4 border-white shadow-md flex flex-col items-center min-w-[120px] lg:min-w-[150px]">
-                                <div class="text-gray-500 font-bold mb-1 lg:mb-2 flex items-center gap-1 lg:gap-2 text-sm lg:text-base"><i data-lucide="target" class="w-5 h-5 text-orange-400"></i> 獲得分數</div>
-                                <div class="text-4xl lg:text-5xl font-black text-orange-500">${score * 100}</div>
+                        <div class="flex w-full justify-center gap-[3dvw] flex-shrink-0">
+                            <div class="bg-white p-[clamp(1.2rem,3dvh,2rem)] rounded-[clamp(1rem,3dvh,2rem)] border-[clamp(3px,0.5dvh,6px)] border-white shadow-md flex flex-col items-center min-w-[20dvw]">
+                                <div class="text-gray-500 font-bold mb-[1dvh] flex items-center gap-[0.5dvw] text-[clamp(1rem,2.5dvh,1.5rem)]"><i data-lucide="target" class="w-[clamp(1.2rem,3dvh,1.8rem)] h-auto text-orange-400"></i> 獲得分數</div>
+                                <div class="text-[clamp(2.5rem,6dvh,4.5rem)] font-black text-orange-500">${score * 100}</div>
                             </div>
-                            <div class="bg-white px-4 py-3 lg:px-6 lg:py-5 rounded-[1.5rem] border-4 border-white shadow-md flex flex-col items-center min-w-[120px] lg:min-w-[150px]">
-                                <div class="text-gray-500 font-bold mb-1 lg:mb-2 flex items-center gap-1 lg:gap-2 text-sm lg:text-base"><i data-lucide="swords" class="w-5 h-5 text-green-500"></i> 擊敗怪獸</div>
-                                <div class="text-4xl lg:text-5xl font-black text-green-600">${score}<span class="text-2xl lg:text-3xl text-gray-300 ml-1">/9</span></div>
+                            <div class="bg-white p-[clamp(1.2rem,3dvh,2rem)] rounded-[clamp(1rem,3dvh,2rem)] border-[clamp(3px,0.5dvh,6px)] border-white shadow-md flex flex-col items-center min-w-[20dvw]">
+                                <div class="text-gray-500 font-bold mb-[1dvh] flex items-center gap-[0.5dvw] text-[clamp(1rem,2.5dvh,1.5rem)]"><i data-lucide="swords" class="w-[clamp(1.2rem,3dvh,1.8rem)] h-auto text-green-500"></i> 擊敗怪獸</div>
+                                <div class="text-[clamp(2.5rem,6dvh,4.5rem)] font-black text-green-600">${score}<span class="text-[clamp(1.5rem,4dvh,3rem)] text-gray-300 ml-1">/9</span></div>
                             </div>
                         </div>
                     </div>
 
-                    <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-2xl lg:text-3xl py-3 lg:py-5 rounded-[2rem] flex items-center justify-center gap-4 cursor-pointer hover:from-blue-600 hover:to-blue-800">
-                        <i data-lucide="refresh-ccw" class="w-8 h-8 lg:w-10 lg:h-10"></i> 再玩一次
+                    <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-[clamp(1.5rem,3.5dvh,2.5rem)] py-[clamp(1.2rem,2.5dvh,2rem)] rounded-[clamp(1.5rem,4dvh,3rem)] flex items-center justify-center gap-[1dvw] hover:from-blue-600 hover:to-blue-800">
+                        <i data-lucide="refresh-ccw" class="w-[clamp(2rem,4.5dvh,3.5rem)] h-auto"></i> 再玩一次
                     </button>
                 </div>
             </div>
