@@ -111,7 +111,8 @@
         }
     </style>
 </head>
-<body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-screen w-screen overflow-hidden flex items-center justify-center">
+<!-- 使用 100dvh 適配行動裝置導航列 -->
+<body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-[100dvh] w-screen overflow-hidden flex items-center justify-center">
 
     <!-- 直式螢幕警告 -->
     <div class="portrait-warning fixed inset-0 z-50 bg-blue-600 text-white flex-col items-center justify-center p-8 text-center">
@@ -128,8 +129,8 @@
         <div class="absolute top-[60%] right-[15%] w-48 h-16 bg-white/60 rounded-full blur-sm animate-[pulse_7s_ease-in-out_infinite]"></div>
     </div>
 
-    <!-- 遊戲主要容器 -->
-    <div id="app" class="relative z-10 w-full max-w-[1350px] h-[92vh] mx-auto p-4 lg:p-6 flex items-center justify-center"></div>
+    <!-- 遊戲主要容器 (調整為 95dvh) -->
+    <div id="app" class="relative z-10 w-full max-w-[1350px] h-[95dvh] mx-auto p-3 lg:p-6 flex items-center justify-center"></div>
 
     <script>
         // --- 徹底鎖死平板視角：防雙指縮放與雙擊放大 ---
@@ -144,7 +145,7 @@
             lastTouchEnd = now;
         }, false);
 
-        // --- 實體化立體怪獸設計 (純 CSS + Lucide) - 適配縮小版框架 ---
+        // --- 實體化立體怪獸設計 ---
         const monsters = {
             cigarette: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
                 <div class="w-24 h-40 bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[6px] border-gray-400 shadow-[10px_10px_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-5 relative animate-float">
@@ -242,8 +243,7 @@
             </div>`
         };
 
-        // --- 全新注音版官方題庫 (0517版本) ---
-        // 使用 {注音} 來標記，系統會自動轉換為標準直排注音 DOM 結構
+        // --- 全新注音版官方題庫 ---
         const questions = [
             {
                 villain: '菸蒂怪', villainIcon: monsters.cigarette,
@@ -316,7 +316,7 @@
         let score = 0;
         let answeredStatus = new Array(9).fill(null); 
         let feedback = null;
-        let showConfirmModal = false; // 控制重新開始確認視窗
+        let showConfirmModal = false;
 
         const appDiv = document.getElementById('app');
 
@@ -327,7 +327,7 @@
         ];
 
         // ==========================================
-        // 全新注音解析工具：將 {注音} 轉換為 CSS 切割排版 DOM
+        // 全新注音解析工具
         // ==========================================
         const parseZhuyin = (str) => {
             if (!str) return '';
@@ -336,29 +336,19 @@
                 let isLightTone = false;
                 let symbols = zhuyinStr;
 
-                // 提取聲調 (輕聲 ˙, 二聲 ˊ, 三聲 ˇ, 四聲 ˋ)
                 if (symbols.includes('˙')) {
                     isLightTone = true;
                     symbols = symbols.replace('˙', '');
-                } else if (symbols.includes('ˊ')) {
-                    tone = 'ˊ';
-                    symbols = symbols.replace('ˊ', '');
-                } else if (symbols.includes('ˇ')) {
-                    tone = 'ˇ';
-                    symbols = symbols.replace('ˇ', '');
-                } else if (symbols.includes('ˋ')) {
-                    tone = 'ˋ';
-                    symbols = symbols.replace('ˋ', '');
-                }
+                } else if (symbols.includes('ˊ')) { tone = 'ˊ'; symbols = symbols.replace('ˊ', ''); } 
+                  else if (symbols.includes('ˇ')) { tone = 'ˇ'; symbols = symbols.replace('ˇ', ''); } 
+                  else if (symbols.includes('ˋ')) { tone = 'ˋ'; symbols = symbols.replace('ˋ', ''); }
 
-                // 組合符號 HTML
                 let symbolsHtml = '';
                 if (isLightTone) symbolsHtml += '<span class="z-sym light-tone">˙</span>';
                 for (let i = 0; i < symbols.length; i++) {
                     symbolsHtml += `<span class="z-sym">${symbols[i]}</span>`;
                 }
 
-                // 返回重組後的注音區塊
                 return `
                 <span class="z-word">
                     <span class="z-base">${baseChar}</span>
@@ -370,7 +360,6 @@
             });
         };
 
-        // --- 核心渲染函數 ---
         function render() {
             let content = '';
             if (gameState === 'start') content = renderStart();
@@ -378,7 +367,6 @@
             else if (gameState === 'playing') content = renderPlaying();
             else if (gameState === 'result') content = renderResult();
 
-            // 如果點擊了重新開始，顯示確認視窗 (防呆機制)
             let modalHtml = '';
             if (showConfirmModal) {
                 modalHtml = `
@@ -401,29 +389,17 @@
             lucide.createIcons();
         }
 
-        window.handleStart = function() {
-            gameState = 'grid'; answeredStatus = new Array(9).fill(null); score = 0; render();
-        }
-
-        window.promptRestart = function() {
-            showConfirmModal = true; render();
-        }
-
+        window.handleStart = function() { gameState = 'grid'; answeredStatus = new Array(9).fill(null); score = 0; render(); }
+        window.promptRestart = function() { showConfirmModal = true; render(); }
         window.confirmRestart = function(yes) {
             showConfirmModal = false;
-            if(yes) {
-                gameState = 'start'; 
-                answeredStatus = new Array(9).fill(null); 
-                score = 0; currentQ = 0; feedback = null;
-            }
+            if(yes) { gameState = 'start'; answeredStatus = new Array(9).fill(null); score = 0; currentQ = 0; feedback = null; }
             render();
         }
-
         window.selectQuestion = function(idx) {
             if (answeredStatus[idx] !== null) return; 
             currentQ = idx; gameState = 'playing'; feedback = null; render();
         }
-
         window.handleAnswer = function(idx) {
             if (feedback !== null) return; 
             const isCorrect = idx === questions[currentQ].correctAnswer;
@@ -432,51 +408,51 @@
             feedback = { isCorrect: isCorrect, text: questions[currentQ].explanation };
             render();
         }
-
         window.handleNext = function() {
             let completedCount = answeredStatus.filter(s => s !== null).length;
             if (completedCount === 9) gameState = 'result'; else gameState = 'grid';
             render();
         }
 
-        // 1. 首頁 (三列排版風格)
+        // 1. 首頁 (三列排版、加入盾牌圖示、自適應防卡視窗)
         function renderStart() {
             return `
             <div class="w-full h-full bg-white/95 backdrop-blur-md rounded-[2.5rem] shadow-2xl border-[10px] border-white p-6 md:p-10 flex flex-col md:flex-row items-center justify-center gap-6 lg:gap-12 animate-zoom-in">
                 <!-- 左側：視覺插圖 -->
-                <div class="md:w-5/12 flex items-center justify-center animate-bounce-slow h-full">
-                    <div class="aspect-square w-full max-w-[280px] lg:max-w-[340px] bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[12px] border-white relative">
+                <div class="md:w-5/12 flex items-center justify-center animate-bounce-slow h-full min-h-0">
+                    <div class="aspect-square w-full max-h-[50dvh] max-w-[280px] lg:max-w-[340px] bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[12px] border-white relative">
                         <i data-lucide="leaf" class="w-24 h-24 lg:w-32 lg:h-32 text-white"></i>
                         <i data-lucide="sparkles" class="w-10 h-10 lg:w-14 lg:h-14 text-yellow-300 absolute top-4 right-4 animate-pulse"></i>
                     </div>
                 </div>
                 <!-- 右側：標題與按鈕 -->
-                <div class="md:w-7/12 flex flex-col items-center md:items-start justify-center h-full">
-                    <div class="flex items-center justify-center md:justify-start gap-4 mb-6 bg-white shadow-sm border-2 border-gray-100 rounded-full py-3 px-6 w-max mx-auto md:mx-0">
-                        <img src="image_1c45dd.png" alt="南投環保局標誌" class="w-14 h-14 lg:w-16 lg:h-16 object-contain" />
-                        <h2 class="text-green-800 font-black text-2xl lg:text-3xl tracking-widest pt-1">南投縣政府環境保護局</h2>
+                <div class="md:w-7/12 flex flex-col items-center md:items-start justify-center h-full overflow-y-auto no-scrollbar py-2">
+                    <div class="flex items-center justify-center md:justify-start gap-4 mb-4 bg-white shadow-sm border-2 border-gray-100 rounded-full py-2 px-5 lg:py-3 lg:px-6 w-max mx-auto md:mx-0 flex-shrink-0">
+                        <img src="image_1c45dd.png" alt="南投環保局標誌" class="w-10 h-10 lg:w-14 lg:h-14 object-contain" />
+                        <h2 class="text-green-800 font-black text-xl lg:text-3xl tracking-widest pt-1">南投縣政府環境保護局</h2>
                     </div>
                     
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-blue-800 mb-6 leading-tight drop-shadow-md text-center md:text-left">
-                        環保小尖兵<br/><span class="text-orange-500 text-3xl md:text-4xl lg:text-5xl mt-2 block">沙包挑戰賽！</span>
+                    <!-- 標題與盾牌圖示 -->
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-blue-800 mb-6 leading-tight drop-shadow-md text-center md:text-left flex flex-col items-center md:items-start flex-shrink-0">
+                        <div class="flex items-center justify-center md:justify-start gap-2 lg:gap-3">
+                            環保小尖兵 <i data-lucide="shield-check" class="w-10 h-10 lg:w-14 lg:h-14 text-green-500 drop-shadow-sm pb-1"></i>
+                        </div>
+                        <span class="text-orange-500 text-3xl md:text-4xl lg:text-5xl mt-2 block">沙包挑戰賽！</span>
                     </h1>
                     
-                    <!-- 三列對齊排版風格 -->
-                    <div class="w-full bg-blue-50/80 p-5 lg:p-7 rounded-[2rem] border-[4px] border-dashed border-blue-300 shadow-inner mb-6 lg:mb-8 flex-shrink-0 relative flex flex-col justify-center">
+                    <!-- 三列置中對齊排版風格 -->
+                    <div class="w-full bg-blue-50/80 p-5 lg:p-7 rounded-[2rem] border-[4px] border-dashed border-blue-300 shadow-inner mb-6 flex-shrink-0 relative flex flex-col justify-center">
                         <h3 class="text-center font-black text-2xl lg:text-3xl text-orange-600 mb-4 tracking-widest drop-shadow-sm">
                             ~~ 歡迎來到敦和國小 ~~
                         </h3>
-                        <div class="w-full px-2 flex flex-col gap-2">
-                            <p class="text-gray-800 font-black text-xl lg:text-2xl leading-relaxed text-center md:text-left">
-                                快拿起手上的沙包，丟向九宮格選擇題目，
-                            </p>
-                            <p class="text-blue-700 font-black text-2xl lg:text-3xl leading-relaxed text-center md:text-right drop-shadow-sm mt-1">
-                                一起打敗污染怪獸吧!!!
-                            </p>
+                        <div class="w-full flex flex-col gap-2 md:gap-3 items-center justify-center">
+                            <p class="text-gray-800 font-black text-xl lg:text-2xl text-center">快拿起手上的沙包</p>
+                            <p class="text-gray-800 font-black text-xl lg:text-2xl text-center">丟向九宮格選擇題目</p>
+                            <p class="text-blue-700 font-black text-2xl lg:text-3xl text-center drop-shadow-sm mt-1">一起打敗污染怪獸吧!!!</p>
                         </div>
                     </div>
 
-                    <button onclick="handleStart()" class="grid-btn w-[80%] md:w-auto bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-2xl lg:text-3xl py-4 lg:py-5 px-8 lg:px-12 rounded-full flex items-center justify-center gap-3 cursor-pointer hover:from-green-500 hover:to-green-700">
+                    <button onclick="handleStart()" class="grid-btn flex-shrink-0 w-[80%] md:w-auto bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-2xl lg:text-3xl py-3 lg:py-5 px-8 lg:px-12 rounded-full flex items-center justify-center gap-3 cursor-pointer hover:from-green-500 hover:to-green-700 mx-auto md:mx-0">
                         <i data-lucide="play-circle" class="w-8 h-8 lg:w-10 lg:h-10"></i> 開始挑戰！
                     </button>
                 </div>
@@ -484,15 +460,15 @@
             `;
         }
 
-        // 2. 九宮格選單 (防掉字處理與重新開始按鈕整合)
+        // 2. 九宮格選單 (防掉字處理與防破版滑動)
         function renderGrid() {
             let gridHtml = answeredStatus.map((status, i) => {
                 let isDone = status !== null;
                 let btnColor = isDone ? 'bg-gray-200 text-gray-400 disabled' : gridColors[i];
-                let contentHtml = `<span class="text-5xl md:text-7xl font-black drop-shadow-lg">${i + 1}</span>`;
+                let contentHtml = `<span class="text-5xl md:text-6xl lg:text-7xl font-black drop-shadow-lg">${i + 1}</span>`;
                 if (isDone) {
-                    if (status === true) contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-20 h-20 text-green-500 opacity-80 rotate-12"></i></div>`;
-                    else contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="x-circle" class="w-20 h-20 text-red-400 opacity-80 -rotate-12"></i></div>`;
+                    if (status === true) contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-16 h-16 lg:w-20 lg:h-20 text-green-500 opacity-80 rotate-12"></i></div>`;
+                    else contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="x-circle" class="w-16 h-16 lg:w-20 lg:h-20 text-red-400 opacity-80 -rotate-12"></i></div>`;
                 }
                 return `
                 <button onclick="selectQuestion(${i})" class="grid-btn relative aspect-square rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-center border-4 border-white/60 overflow-hidden group ${btnColor}">
@@ -503,13 +479,10 @@
             }).join('');
 
             return `
-            <div class="w-full h-full flex flex-col md:flex-row gap-6 lg:gap-10 animate-fade-in relative">
-                
+            <div class="w-full h-full flex flex-col md:flex-row gap-4 lg:gap-10 animate-fade-in relative min-h-0">
                 <!-- 左側狀態 -->
-                <div class="md:w-1/3 h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-6 lg:p-8 rounded-[2.5rem] shadow-2xl border-[8px] border-white relative">
-                    
-                    <!-- 分兩列的標語框 (加入 whitespace-nowrap 徹底防止掉字) -->
-                    <div class="flex flex-col items-center justify-center gap-3 mb-2 bg-gradient-to-b from-green-50 to-blue-50 px-2 lg:px-4 py-5 rounded-[1.5rem] border-[3px] border-white shadow-md flex-shrink-0 w-full mx-auto">
+                <div class="md:w-1/3 h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-4 lg:p-8 rounded-[2.5rem] shadow-2xl border-[8px] border-white relative overflow-y-auto no-scrollbar gap-2">
+                    <div class="flex flex-col items-center justify-center gap-3 mb-2 bg-gradient-to-b from-green-50 to-blue-50 px-2 lg:px-4 py-4 rounded-[1.5rem] border-[3px] border-white shadow-md flex-shrink-0 w-full mx-auto">
                         <div class="flex items-center justify-center gap-2 lg:gap-3 w-full">
                             <i data-lucide="sparkles" class="w-7 h-7 lg:w-9 lg:h-9 text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
                             <h2 class="text-green-800 font-black text-xl lg:text-3xl tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
@@ -521,33 +494,32 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-center justify-center flex-1 my-2">
-                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center border-4 border-green-400 shadow-md mb-4">
-                            <i data-lucide="leaf" class="w-10 h-10 text-green-500"></i>
+                    <div class="flex flex-col items-center justify-center flex-1 my-2 min-h-[120px]">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex items-center justify-center border-4 border-green-400 shadow-md mb-2 lg:mb-4">
+                            <i data-lucide="leaf" class="w-8 h-8 lg:w-10 lg:h-10 text-green-500"></i>
                         </div>
-                        <h2 class="text-3xl font-black text-gray-800 mb-2">請選題！</h2>
-                        <p class="text-green-600 font-bold text-xl">目前得分：<span class="text-4xl text-orange-500 ml-2 drop-shadow-sm">${score * 100}</span></p>
+                        <h2 class="text-2xl lg:text-3xl font-black text-gray-800 mb-2">請選題！</h2>
+                        <p class="text-green-600 font-bold text-lg lg:text-xl">目前得分：<span class="text-3xl lg:text-4xl text-orange-500 ml-2 drop-shadow-sm">${score * 100}</span></p>
                     </div>
 
-                    <!-- 底部提示區與重新開始按鈕組合 -->
+                    <!-- 底部提示區與重新開始 -->
                     <div class="flex flex-col gap-3 flex-shrink-0">
-                        <div class="bg-blue-50/80 p-4 lg:p-5 rounded-[1.5rem] border-4 border-dashed border-blue-300 flex flex-col items-center justify-center">
-                            <i data-lucide="target" class="w-10 h-10 lg:w-12 lg:h-12 text-blue-500 mb-2 animate-bounce"></i>
-                            <p class="text-base lg:text-lg font-bold text-center text-gray-700 leading-snug">
+                        <div class="bg-blue-50/80 p-3 lg:p-5 rounded-[1.5rem] border-4 border-dashed border-blue-300 flex flex-col items-center justify-center">
+                            <i data-lucide="target" class="w-8 h-8 lg:w-12 lg:h-12 text-blue-500 mb-1 lg:mb-2 animate-bounce"></i>
+                            <p class="text-sm lg:text-lg font-bold text-center text-gray-700 leading-snug">
                                 沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span>
                             </p>
                         </div>
-                        
                         <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[1.5rem] py-3 lg:py-4 shadow-sm border-4 border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-2 font-black">
                             <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
-                            <span class="text-xl">重新開始</span>
+                            <span class="text-lg lg:text-xl">重新開始</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- 右側九宮格 -->
-                <div class="md:w-2/3 h-full bg-white/70 backdrop-blur-md p-6 lg:p-10 rounded-[2.5rem] shadow-2xl border-[8px] border-white flex items-center justify-center">
-                    <div class="w-full max-w-[600px] grid grid-cols-3 gap-4 lg:gap-6">
+                <div class="md:w-2/3 h-full bg-white/70 backdrop-blur-md p-4 lg:p-10 rounded-[2.5rem] shadow-2xl border-[8px] border-white flex items-center justify-center overflow-y-auto no-scrollbar">
+                    <div class="w-full max-h-[85dvh] max-w-[65vh] md:max-w-[600px] grid grid-cols-3 gap-3 lg:gap-6 mx-auto aspect-square">
                         ${gridHtml}
                     </div>
                 </div>
@@ -555,7 +527,7 @@
             `;
         }
 
-        // 3. 遊戲答題中 (取消捲動，微調適中字體防止第6題破版)
+        // 3. 遊戲答題中 (加入防破版捲動保護)
         function renderPlaying() {
             const q = questions[currentQ];
             let optionsHtml = q.options.map((opt, idx) => {
@@ -563,7 +535,7 @@
                     ? 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400 grid-btn cursor-pointer' 
                     : (idx === q.correctAnswer ? 'bg-green-100 border-green-500 text-green-800 shadow-inner' : 'bg-gray-100 border-gray-200 text-gray-400');
                 return `
-                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-3 lg:p-4 rounded-[1.5rem] font-black text-base lg:text-lg xl:text-xl border-[3px] lg:border-[4px] relative flex justify-between items-center ${btnStateClass}">
+                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-3 lg:p-4 rounded-[1.5rem] font-black text-base lg:text-lg xl:text-xl border-[3px] lg:border-[4px] relative flex justify-between items-center flex-shrink-0 ${btnStateClass}">
                     <span class="zhuyin-text flex-1 pr-2">${parseZhuyin(opt)}</span>
                     ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-6 h-6 opacity-30 flex-shrink-0 ml-1"></i>` : ''}
                 </button>
@@ -574,23 +546,22 @@
             if (feedback) {
                 feedbackHtml = `
                 <div class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-sm rounded-[2rem] animate-fade-in">
-                    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] p-6 lg:p-8 shadow-2xl flex flex-col items-center text-center transform animate-zoom-in border-[8px] lg:border-[10px] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
+                    <div class="bg-white w-full max-w-2xl max-h-[90dvh] rounded-[2.5rem] p-6 lg:p-8 shadow-2xl flex flex-col items-center text-center transform animate-zoom-in border-[8px] lg:border-[10px] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'} overflow-y-auto no-scrollbar">
                         ${feedback.isCorrect ? `
-                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex items-center justify-center mb-3 lg:mb-4 border-[4px] border-green-400 animate-bounce">
+                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex flex-shrink-0 items-center justify-center mb-3 lg:mb-4 border-[4px] border-green-400 animate-bounce">
                                 <i data-lucide="check-circle" class="w-10 h-10 lg:w-12 lg:h-12 text-green-500"></i>
                             </div>
-                            <h3 class="text-3xl lg:text-4xl font-black text-green-600 mb-3 lg:mb-4">攻擊成功！</h3>
+                            <h3 class="text-3xl lg:text-4xl font-black text-green-600 mb-3 lg:mb-4 flex-shrink-0">攻擊成功！</h3>
                         ` : `
-                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-red-100 rounded-full flex items-center justify-center mb-3 lg:mb-4 border-[4px] border-red-400">
+                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-red-100 rounded-full flex flex-shrink-0 items-center justify-center mb-3 lg:mb-4 border-[4px] border-red-400">
                                 <i data-lucide="x-circle" class="w-10 h-10 lg:w-12 lg:h-12 text-red-500"></i>
                             </div>
-                            <h3 class="text-3xl lg:text-4xl font-black text-red-600 mb-3 lg:mb-4">哎呀！打歪了</h3>
+                            <h3 class="text-3xl lg:text-4xl font-black text-red-600 mb-3 lg:mb-4 flex-shrink-0">哎呀！打歪了</h3>
                         `}
-                        <!-- 解答文字區域，字體適度縮小以防破版 -->
-                        <div class="w-full bg-gray-50 p-4 rounded-2xl border-2 border-gray-200 mb-6 text-left overflow-hidden">
+                        <div class="w-full bg-gray-50 p-4 rounded-2xl border-2 border-gray-200 mb-6 text-left flex-1 min-h-0 overflow-y-auto no-scrollbar">
                             <p class="text-gray-700 font-bold text-base lg:text-lg xl:text-xl leading-relaxed zhuyin-text">${parseZhuyin(feedback.text)}</p>
                         </div>
-                        <button onclick="handleNext()" class="grid-btn w-full py-3 lg:py-4 rounded-full font-black text-xl lg:text-2xl text-white shadow-lg flex items-center justify-center gap-3 ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer">
+                        <button onclick="handleNext()" class="grid-btn w-full py-3 lg:py-4 rounded-full font-black text-xl lg:text-2xl text-white shadow-lg flex-shrink-0 flex items-center justify-center gap-3 ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer">
                             返回九宮格 <i data-lucide="arrow-right-circle" class="w-6 h-6 lg:w-8 lg:h-8"></i>
                         </button>
                     </div>
@@ -601,9 +572,8 @@
             let villainClass = feedback ? (feedback.isCorrect ? 'scale-75 rotate-12 opacity-30 grayscale blur-md' : 'scale-110 -rotate-12 drop-shadow-2xl') : '';
 
             return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border-[8px] lg:border-[10px] border-white p-4 lg:p-6 flex flex-col md:flex-row gap-4 lg:gap-8 animate-slide-up relative overflow-hidden">
-                
-                <!-- 左側：怪獸展示區 (維持 28% width) -->
+            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border-[8px] lg:border-[10px] border-white p-4 lg:p-6 flex flex-col md:flex-row gap-4 lg:gap-8 animate-slide-up relative overflow-hidden min-h-0">
+                <!-- 左側怪獸 -->
                 <div class="md:w-1/3 lg:w-[28%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[2rem] p-4 lg:p-6 flex flex-col items-center justify-between border-[6px] lg:border-8 border-gray-300 relative shadow-inner overflow-hidden flex-shrink-0">
                     <div class="absolute top-4 left-4 bg-blue-600 text-white font-black px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl text-sm shadow-md border-2 border-blue-400 z-20 flex items-center gap-1.5">
                         <i data-lucide="hash" class="w-4 h-4 lg:w-5 lg:h-5"></i> 題 ${currentQ + 1}
@@ -622,21 +592,20 @@
                     </div>
                 </div>
 
-                <!-- 右側：問答區 (維持 72% width，字體與間距微調，完美適配第6題長文) -->
-                <div class="md:w-2/3 lg:w-[72%] h-full flex flex-col justify-between py-1">
-                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-3 lg:p-4 rounded-[1.5rem] mb-3 border-l-[6px] border-amber-400 shadow-sm text-sm lg:text-base flex items-center gap-2 lg:gap-3">
+                <!-- 右側問答區 (加入防破版機制) -->
+                <div class="md:w-2/3 lg:w-[72%] h-full flex flex-col justify-between py-1 min-h-0 gap-2">
+                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-3 lg:p-4 rounded-[1.5rem] border-l-[6px] border-amber-400 shadow-sm text-sm lg:text-base flex items-center gap-2 lg:gap-3 overflow-y-auto no-scrollbar max-h-[20vh]">
                         <i data-lucide="alert-circle" class="w-6 h-6 lg:w-8 lg:h-8 text-amber-600 flex-shrink-0"></i>
                         <span class="leading-relaxed zhuyin-text w-full">${parseZhuyin(q.scenario)}</span>
                     </div>
                     
-                    <!-- 題目主體：縮小上下內距(p)與字體大小，利用 overflow-hidden 保證不溢出且不捲動 -->
-                    <div class="flex-1 min-h-0 bg-blue-50 p-3 lg:p-5 rounded-[1.5rem] lg:rounded-[2rem] border-4 border-blue-200 shadow-inner mb-3 flex items-center justify-center text-center overflow-hidden">
+                    <div class="flex-1 min-h-0 bg-blue-50 p-3 lg:p-5 rounded-[1.5rem] lg:rounded-[2rem] border-4 border-blue-200 shadow-inner flex items-center justify-center text-center overflow-y-auto no-scrollbar">
                         <h2 class="text-lg md:text-xl lg:text-2xl font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full">
                             ${parseZhuyin(q.question)}
                         </h2>
                     </div>
                     
-                    <div class="flex-shrink-0 grid gap-2 lg:gap-3">
+                    <div class="flex-shrink-0 grid gap-2 lg:gap-3 overflow-y-auto no-scrollbar max-h-[40vh]">
                         ${optionsHtml}
                     </div>
                 </div>
@@ -651,7 +620,6 @@
             let message = score === 9 ? "太厲害了！你消滅了所有的污染怪獸，成功守護了敦和國小！" : 
                          (score >= 6 ? "表現不錯喔！擊退了大部分的怪獸，繼續保持環保好習慣！" : "怪獸還在搗蛋！重新拿好沙包，再挑戰一次吧！");
             
-            // 依據分數給予不同顏色與星級
             let badgeColor = score === 9 ? "text-yellow-500" : (score >= 6 ? "text-blue-500" : "text-gray-400");
             let badgeBg = score === 9 ? "bg-gradient-to-b from-yellow-50 to-orange-100 border-yellow-300" : 
                          (score >= 6 ? "bg-gradient-to-b from-blue-50 to-cyan-100 border-blue-300" : "bg-gradient-to-b from-gray-50 to-gray-200 border-gray-300");
@@ -660,7 +628,7 @@
             let starsHtml = '<div class="flex justify-center items-end gap-2 mb-4">';
             for(let i=0; i<3; i++) {
                 let isCenter = i === 1;
-                let sizeClass = isCenter ? 'w-20 h-20 mb-4' : 'w-14 h-14';
+                let sizeClass = isCenter ? 'w-16 h-16 lg:w-20 lg:h-20 mb-4' : 'w-12 h-12 lg:w-14 lg:h-14';
                 let colorClass = i < starCount ? 'text-yellow-400' : 'text-gray-300 opacity-50';
                 let fillStyle = i < starCount ? 'fill: currentColor' : 'fill: none';
                 starsHtml += `<i data-lucide="star" class="${sizeClass} ${colorClass} drop-shadow-md animate-bounce-slow" style="animation-delay: ${i*0.2}s; ${fillStyle}"></i>`;
@@ -668,66 +636,57 @@
             starsHtml += '</div>';
 
             return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[3rem] shadow-2xl border-[10px] border-white p-5 lg:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 animate-zoom-in relative overflow-hidden">
-                <!-- 背景光暈裝飾 -->
+            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[3rem] shadow-2xl border-[10px] border-white p-5 lg:p-8 flex flex-col md:flex-row gap-6 lg:gap-8 animate-zoom-in relative overflow-hidden min-h-0">
                 <div class="absolute top-[-20%] right-[-10%] w-96 h-96 bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
                 <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
 
-                <!-- 左側：榮譽勳章與評價區 (佔 5/12) -->
-                <div class="md:w-5/12 h-full rounded-[2.5rem] p-6 flex flex-col items-center justify-center border-8 ${badgeBg} relative shadow-inner overflow-hidden flex-shrink-0">
-                    <i data-lucide="sparkles" class="absolute top-8 left-8 w-10 h-10 text-yellow-400 animate-pulse opacity-80"></i>
-                    <i data-lucide="sparkles" class="absolute bottom-12 right-8 w-12 h-12 text-yellow-500 animate-pulse opacity-80"></i>
-
-                    <!-- 動態星級評價 -->
+                <!-- 左側：榮譽勳章與評價區 -->
+                <div class="md:w-5/12 h-full rounded-[2.5rem] p-4 lg:p-6 flex flex-col items-center justify-center border-8 ${badgeBg} relative shadow-inner overflow-hidden flex-shrink-0">
+                    <i data-lucide="sparkles" class="absolute top-8 left-8 w-8 h-8 lg:w-10 lg:h-10 text-yellow-400 animate-pulse opacity-80"></i>
+                    <i data-lucide="sparkles" class="absolute bottom-12 right-8 w-10 h-10 lg:w-12 lg:h-12 text-yellow-500 animate-pulse opacity-80"></i>
                     ${starsHtml}
-
                     <div class="relative animate-float my-2">
-                        <i data-lucide="award" class="w-40 h-40 lg:w-48 lg:h-48 ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
-                        <i data-lucide="award" class="absolute inset-0 w-40 h-40 lg:w-48 lg:h-48 ${badgeColor}"></i>
-                        <div class="absolute inset-0 flex items-center justify-center flex-col pt-6 lg:pt-8">
-                            <span class="text-white font-black text-4xl lg:text-5xl drop-shadow-md">${score * 100}</span>
+                        <i data-lucide="award" class="w-36 h-36 lg:w-48 lg:h-48 ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
+                        <i data-lucide="award" class="absolute inset-0 w-36 h-36 lg:w-48 lg:h-48 ${badgeColor}"></i>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col pt-5 lg:pt-8">
+                            <span class="text-white font-black text-3xl lg:text-5xl drop-shadow-md">${score * 100}</span>
                         </div>
                     </div>
-
-                    <div class="mt-6 bg-white/90 px-6 py-4 rounded-3xl border-4 border-white shadow-lg z-10 w-[95%] text-center relative">
-                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded-full">最終稱號</div>
-                        <h2 class="text-3xl lg:text-4xl font-black text-gray-800 drop-shadow-sm tracking-wide mt-2">${title}</h2>
+                    <div class="mt-4 lg:mt-6 bg-white/90 px-4 py-3 lg:px-6 lg:py-4 rounded-3xl border-4 border-white shadow-lg z-10 w-[95%] text-center relative">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">最終稱號</div>
+                        <h2 class="text-2xl lg:text-4xl font-black text-gray-800 drop-shadow-sm tracking-wide mt-2">${title}</h2>
                     </div>
                 </div>
 
-                <!-- 右側：官方認證與詳細數據區 (佔 7/12) -->
-                <div class="md:w-7/12 h-full flex flex-col justify-between py-2">
-                    
-                    <!-- 官方認證頭部 -->
-                    <div class="flex items-center justify-center md:justify-start gap-3 mb-2 bg-gray-50/80 px-6 py-3 rounded-full border-2 border-gray-200 shadow-sm w-max mx-auto md:mx-0 flex-shrink-0">
-                        <img src="image_1c45dd.png" class="w-10 h-10 lg:w-12 lg:h-12 object-contain" />
-                        <h3 class="text-xl lg:text-2xl font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
+                <!-- 右側：官方認證與詳細數據區 -->
+                <div class="md:w-7/12 h-full flex flex-col justify-between py-2 overflow-y-auto no-scrollbar gap-2">
+                    <div class="flex items-center justify-center md:justify-start gap-3 mb-2 bg-gray-50/80 px-4 py-2 lg:px-6 lg:py-3 rounded-full border-2 border-gray-200 shadow-sm w-max mx-auto md:mx-0 flex-shrink-0">
+                        <img src="image_1c45dd.png" class="w-8 h-8 lg:w-12 lg:h-12 object-contain" />
+                        <h3 class="text-lg lg:text-2xl font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
                     </div>
 
-                    <!-- 遊戲數據儀表板 -->
-                    <div class="flex-1 min-h-0 bg-blue-50 p-6 lg:p-8 rounded-[2.5rem] border-4 border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center mb-5 lg:mb-6 mt-4">
-                        <div class="flex items-center gap-3 mb-4">
-                            <i data-lucide="party-popper" class="w-10 h-10 text-orange-500 animate-bounce"></i>
-                            <h3 class="text-2xl font-black text-blue-800">闖關結果報告</h3>
-                            <i data-lucide="party-popper" class="w-10 h-10 text-orange-500 animate-bounce transform -scale-x-100"></i>
+                    <div class="flex-1 min-h-0 bg-blue-50 p-4 lg:p-8 rounded-[2.5rem] border-4 border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center overflow-y-auto no-scrollbar">
+                        <div class="flex items-center gap-2 lg:gap-3 mb-3 lg:mb-4 flex-shrink-0">
+                            <i data-lucide="party-popper" class="w-8 h-8 lg:w-10 lg:h-10 text-orange-500 animate-bounce"></i>
+                            <h3 class="text-xl lg:text-2xl font-black text-blue-800">闖關結果報告</h3>
+                            <i data-lucide="party-popper" class="w-8 h-8 lg:w-10 lg:h-10 text-orange-500 animate-bounce transform -scale-x-100"></i>
                         </div>
                         
-                        <p class="text-xl lg:text-2xl font-bold text-gray-700 leading-snug text-center mb-8 px-4">${message}</p>
+                        <p class="text-lg lg:text-2xl font-bold text-gray-700 leading-snug text-center mb-6 px-2 lg:px-4 flex-shrink-0">${message}</p>
 
-                        <div class="flex w-full justify-center gap-6 lg:gap-12">
-                            <div class="bg-white px-6 py-5 rounded-[1.5rem] border-4 border-white shadow-md flex flex-col items-center min-w-[150px] transform hover:scale-105 transition-transform">
-                                <div class="text-gray-500 font-bold mb-2 flex items-center gap-2"><i data-lucide="target" class="w-6 h-6 text-orange-400"></i> 獲得分數</div>
-                                <div class="text-5xl font-black text-orange-500">${score * 100}</div>
+                        <div class="flex w-full justify-center gap-4 lg:gap-12 flex-shrink-0">
+                            <div class="bg-white px-4 py-3 lg:px-6 lg:py-5 rounded-[1.5rem] border-4 border-white shadow-md flex flex-col items-center min-w-[120px] lg:min-w-[150px]">
+                                <div class="text-gray-500 font-bold mb-1 lg:mb-2 flex items-center gap-1 lg:gap-2 text-sm lg:text-base"><i data-lucide="target" class="w-5 h-5 text-orange-400"></i> 獲得分數</div>
+                                <div class="text-4xl lg:text-5xl font-black text-orange-500">${score * 100}</div>
                             </div>
-                            <div class="bg-white px-6 py-5 rounded-[1.5rem] border-4 border-white shadow-md flex flex-col items-center min-w-[150px] transform hover:scale-105 transition-transform">
-                                <div class="text-gray-500 font-bold mb-2 flex items-center gap-2"><i data-lucide="swords" class="w-6 h-6 text-green-500"></i> 擊敗怪獸</div>
-                                <div class="text-5xl font-black text-green-600">${score}<span class="text-3xl text-gray-300 ml-1">/9</span></div>
+                            <div class="bg-white px-4 py-3 lg:px-6 lg:py-5 rounded-[1.5rem] border-4 border-white shadow-md flex flex-col items-center min-w-[120px] lg:min-w-[150px]">
+                                <div class="text-gray-500 font-bold mb-1 lg:mb-2 flex items-center gap-1 lg:gap-2 text-sm lg:text-base"><i data-lucide="swords" class="w-5 h-5 text-green-500"></i> 擊敗怪獸</div>
+                                <div class="text-4xl lg:text-5xl font-black text-green-600">${score}<span class="text-2xl lg:text-3xl text-gray-300 ml-1">/9</span></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 操作按鈕區 -->
-                    <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-2xl lg:text-3xl py-4 lg:py-5 rounded-[2rem] flex items-center justify-center gap-4 cursor-pointer hover:from-blue-600 hover:to-blue-800">
+                    <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-2xl lg:text-3xl py-3 lg:py-5 rounded-[2rem] flex items-center justify-center gap-4 cursor-pointer hover:from-blue-600 hover:to-blue-800">
                         <i data-lucide="refresh-ccw" class="w-8 h-8 lg:w-10 lg:h-10"></i> 再玩一次
                     </button>
                 </div>
