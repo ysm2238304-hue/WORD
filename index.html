@@ -52,6 +52,11 @@
             cursor: not-allowed;
         }
 
+        /* 加入按鈕與連結的觸控鎖定，防雙擊放大 */
+        button, a, .grid-btn {
+            touch-action: manipulation;
+        }
+
         /* ==================================================
            全新開發：標準台灣直列注音排版系統 (Flexbox 奈米切割實作)
            ================================================== */
@@ -127,6 +132,18 @@
     <div id="app" class="relative z-10 w-full max-w-[1350px] h-[92vh] mx-auto p-4 lg:p-6 flex items-center justify-center"></div>
 
     <script>
+        // --- 徹底鎖死平板視角：防雙指縮放與雙擊放大 ---
+        document.addEventListener('touchmove', function(event) {
+            if (event.scale !== 1) { event.preventDefault(); }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            let now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) { event.preventDefault(); }
+            lastTouchEnd = now;
+        }, false);
+
         // --- 實體化立體怪獸設計 (純 CSS + Lucide) - 適配縮小版框架 ---
         const monsters = {
             cigarette: `<div class="relative w-full h-full flex items-center justify-center scale-[1.0] lg:scale-[1.25]">
@@ -252,7 +269,7 @@
             {
                 villain: '罰單怪', villainIcon: monsters.ticket,
                 scenario: "💸 氣{ㄑㄧˋ}噗{ㄆㄨ}噗{ㄆㄨ}的{ㄉㄜ˙}【罰{ㄈㄚˊ}單{ㄉㄢ}怪{ㄍㄨㄞˋ}】出{ㄔㄨ}現{ㄒㄧㄢˋ}了{ㄌㄜ˙}！亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}是{ㄕˋ}不{ㄅㄨˋ}對{ㄉㄨㄟˋ}的{ㄉㄜ˙}行{ㄒㄧㄥˊ}為{ㄨㄟˊ}！",
-                question: "在{ㄗㄞˋ}路{ㄌㄨˋ}上{ㄕㄤˋ}亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}，除{ㄔㄨˊ}了{ㄌㄜ˙}會{ㄏㄨㄟˋ}把{ㄅㄚˇ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}弄{ㄋㄨㄥˋ}髒{ㄗㄤ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}環{ㄏㄨㄢˊ}保{ㄅㄠˇ}局{ㄐㄩˊ}罰{ㄈㄚˊ}多{ㄉㄨㄛ}少{ㄕㄠˇ}錢{ㄑㄧㄢˊ}呢{ㄋㄜ˙}？",
+                question: "在{ㄗㄞˋ}路{ㄌㄨˋ}上{ㄕㄤˋ}亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}，除{ㄔㄨˊ}了{ㄌㄜˋ}會{ㄏㄨㄟˋ}把{ㄅㄚˇ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}弄{ㄋㄨㄥˋ}髒{ㄗㄤ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}環{ㄏㄨㄢˊ}保{ㄅㄠˇ}局{ㄐㄩˊ}罰{ㄈㄚˊ}多{ㄉㄨㄛ}少{ㄕㄠˇ}錢{ㄑㄧㄢˊ}呢{ㄋㄜ˙}？",
                 options: ["(A) 不{ㄅㄨˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}罰{ㄈㄚˊ}錢{ㄑㄧㄢˊ}，記{ㄐㄧˋ}得{ㄉㄜ˙}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}", "(B) 依{ㄧ}廢{ㄈㄟˋ}棄{ㄑㄧˋ}物{ㄨˋ}清{ㄑㄧㄥ}理{ㄌㄧˇ}法{ㄈㄚˇ}，繳{ㄐㄧㄠˇ}1200到{ㄉㄠˋ}6000元{ㄩㄢˊ}罰{ㄈㄚˊ}鍰{ㄏㄨㄢˊ}"], correctAnswer: 1,
                 explanation: "亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}不{ㄅㄨˋ}僅{ㄐㄧㄣˇ}破{ㄆㄛˋ}壞{ㄏㄨㄞˋ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}荷{ㄏㄜˊ}包{ㄅㄠ}大{ㄉㄚˋ}失{ㄕ}血{ㄒㄧㄝˇ}！請{ㄑㄧㄥˇ}大{ㄉㄚˋ}家{ㄐㄧㄚ}發{ㄈㄚ}揮{ㄏㄨㄟ}公{ㄍㄨㄥ}德{ㄉㄜˊ}心{ㄒㄧㄣ}喔{ㄛ}！"
             },
@@ -537,7 +554,8 @@
             </div>
             `;
         }
-        // 3. 遊戲答題中 (取消捲動，還原適中偏大且不破版的字體)
+
+        // 3. 遊戲答題中 (取消捲動，微調適中字體防止第6題破版)
         function renderPlaying() {
             const q = questions[currentQ];
             let optionsHtml = q.options.map((opt, idx) => {
@@ -545,9 +563,9 @@
                     ? 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400 grid-btn cursor-pointer' 
                     : (idx === q.correctAnswer ? 'bg-green-100 border-green-500 text-green-800 shadow-inner' : 'bg-gray-100 border-gray-200 text-gray-400');
                 return `
-                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-4 lg:p-5 rounded-[1.5rem] font-black text-lg lg:text-xl xl:text-2xl border-[4px] lg:border-[5px] relative flex justify-between items-center ${btnStateClass}">
+                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-3 lg:p-4 rounded-[1.5rem] font-black text-base lg:text-lg xl:text-xl border-[3px] lg:border-[4px] relative flex justify-between items-center ${btnStateClass}">
                     <span class="zhuyin-text flex-1 pr-2">${parseZhuyin(opt)}</span>
-                    ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-6 h-6 lg:w-8 lg:h-8 opacity-30 flex-shrink-0 ml-1"></i>` : ''}
+                    ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-6 h-6 opacity-30 flex-shrink-0 ml-1"></i>` : ''}
                 </button>
                 `;
             }).join('');
@@ -556,23 +574,23 @@
             if (feedback) {
                 feedbackHtml = `
                 <div class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-sm rounded-[2rem] animate-fade-in">
-                    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] p-6 lg:p-8 shadow-2xl flex flex-col items-center text-center transform animate-zoom-in border-[10px] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
+                    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] p-6 lg:p-8 shadow-2xl flex flex-col items-center text-center transform animate-zoom-in border-[8px] lg:border-[10px] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
                         ${feedback.isCorrect ? `
-                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 border-[4px] border-green-400 animate-bounce">
+                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-green-100 rounded-full flex items-center justify-center mb-3 lg:mb-4 border-[4px] border-green-400 animate-bounce">
                                 <i data-lucide="check-circle" class="w-10 h-10 lg:w-12 lg:h-12 text-green-500"></i>
                             </div>
-                            <h3 class="text-3xl lg:text-4xl font-black text-green-600 mb-4">攻擊成功！</h3>
+                            <h3 class="text-3xl lg:text-4xl font-black text-green-600 mb-3 lg:mb-4">攻擊成功！</h3>
                         ` : `
-                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-red-100 rounded-full flex items-center justify-center mb-4 border-[4px] border-red-400">
+                            <div class="w-16 h-16 lg:w-20 lg:h-20 bg-red-100 rounded-full flex items-center justify-center mb-3 lg:mb-4 border-[4px] border-red-400">
                                 <i data-lucide="x-circle" class="w-10 h-10 lg:w-12 lg:h-12 text-red-500"></i>
                             </div>
-                            <h3 class="text-3xl lg:text-4xl font-black text-red-600 mb-4">哎呀！打歪了</h3>
+                            <h3 class="text-3xl lg:text-4xl font-black text-red-600 mb-3 lg:mb-4">哎呀！打歪了</h3>
                         `}
-                        <!-- 解答文字區域，取消捲動，字體調整為適中不破版 -->
-                        <div class="w-full bg-gray-50 p-4 lg:p-5 rounded-2xl border-2 border-gray-200 mb-6 text-left overflow-hidden">
-                            <p class="text-gray-700 font-bold text-lg lg:text-xl xl:text-2xl leading-relaxed zhuyin-text">${parseZhuyin(feedback.text)}</p>
+                        <!-- 解答文字區域，字體適度縮小以防破版 -->
+                        <div class="w-full bg-gray-50 p-4 rounded-2xl border-2 border-gray-200 mb-6 text-left overflow-hidden">
+                            <p class="text-gray-700 font-bold text-base lg:text-lg xl:text-xl leading-relaxed zhuyin-text">${parseZhuyin(feedback.text)}</p>
                         </div>
-                        <button onclick="handleNext()" class="grid-btn w-full py-4 rounded-full font-black text-xl lg:text-2xl text-white shadow-lg flex items-center justify-center gap-3 ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer">
+                        <button onclick="handleNext()" class="grid-btn w-full py-3 lg:py-4 rounded-full font-black text-xl lg:text-2xl text-white shadow-lg flex items-center justify-center gap-3 ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer">
                             返回九宮格 <i data-lucide="arrow-right-circle" class="w-6 h-6 lg:w-8 lg:h-8"></i>
                         </button>
                     </div>
@@ -583,12 +601,12 @@
             let villainClass = feedback ? (feedback.isCorrect ? 'scale-75 rotate-12 opacity-30 grayscale blur-md' : 'scale-110 -rotate-12 drop-shadow-2xl') : '';
 
             return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border-[10px] border-white p-4 lg:p-6 flex flex-col md:flex-row gap-4 lg:gap-8 animate-slide-up relative overflow-hidden">
+            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border-[8px] lg:border-[10px] border-white p-4 lg:p-6 flex flex-col md:flex-row gap-4 lg:gap-8 animate-slide-up relative overflow-hidden">
                 
                 <!-- 左側：怪獸展示區 (維持 28% width) -->
-                <div class="md:w-1/3 lg:w-[28%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[2rem] p-4 lg:p-6 flex flex-col items-center justify-between border-8 border-gray-300 relative shadow-inner overflow-hidden flex-shrink-0">
-                    <div class="absolute top-4 left-4 bg-blue-600 text-white font-black px-4 py-2 rounded-xl text-sm lg:text-base shadow-md border-2 border-blue-400 z-20 flex items-center gap-1.5">
-                        <i data-lucide="hash" class="w-5 h-5"></i> 題 ${currentQ + 1}
+                <div class="md:w-1/3 lg:w-[28%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[2rem] p-4 lg:p-6 flex flex-col items-center justify-between border-[6px] lg:border-8 border-gray-300 relative shadow-inner overflow-hidden flex-shrink-0">
+                    <div class="absolute top-4 left-4 bg-blue-600 text-white font-black px-3 lg:px-4 py-1.5 lg:py-2 rounded-xl text-sm shadow-md border-2 border-blue-400 z-20 flex items-center gap-1.5">
+                        <i data-lucide="hash" class="w-4 h-4 lg:w-5 lg:h-5"></i> 題 ${currentQ + 1}
                     </div>
                     
                     <div class="flex-1 w-full min-h-0 flex items-center justify-center my-2 relative">
@@ -598,27 +616,27 @@
                         </div>
                     </div>
                     
-                    <div class="bg-white/90 px-4 py-3 lg:px-6 lg:py-4 rounded-[1.5rem] border-4 border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
-                        <span class="text-xs lg:text-base font-bold text-gray-500 block mb-1">遇到污染怪獸：</span>
-                        <span class="text-2xl lg:text-4xl font-black text-red-600 drop-shadow-sm line-clamp-1">${q.villain}</span>
+                    <div class="bg-white/90 px-3 py-2 lg:px-6 lg:py-4 rounded-[1.5rem] border-4 border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
+                        <span class="text-xs lg:text-sm font-bold text-gray-500 block mb-1">遇到污染怪獸：</span>
+                        <span class="text-xl lg:text-3xl font-black text-red-600 drop-shadow-sm line-clamp-1">${q.villain}</span>
                     </div>
                 </div>
 
-                <!-- 右側：問答區 (維持 72% width，字體適配框架不溢出) -->
+                <!-- 右側：問答區 (維持 72% width，字體與間距微調，完美適配第6題長文) -->
                 <div class="md:w-2/3 lg:w-[72%] h-full flex flex-col justify-between py-1">
-                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-3 lg:p-4 rounded-[1.5rem] mb-3 lg:mb-4 border-l-[6px] lg:border-l-[8px] border-amber-400 shadow-sm text-base lg:text-lg flex items-center gap-2 lg:gap-3">
-                        <i data-lucide="alert-circle" class="w-8 h-8 lg:w-10 lg:h-10 text-amber-600 flex-shrink-0"></i>
+                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-3 lg:p-4 rounded-[1.5rem] mb-3 border-l-[6px] border-amber-400 shadow-sm text-sm lg:text-base flex items-center gap-2 lg:gap-3">
+                        <i data-lucide="alert-circle" class="w-6 h-6 lg:w-8 lg:h-8 text-amber-600 flex-shrink-0"></i>
                         <span class="leading-relaxed zhuyin-text w-full">${parseZhuyin(q.scenario)}</span>
                     </div>
                     
-                    <!-- 題目主體：取消 overflow-y-auto，利用 flex-1 與 overflow-hidden 保持整潔不滑動 -->
-                    <div class="flex-1 min-h-0 bg-blue-50 p-4 lg:p-6 rounded-[1.5rem] lg:rounded-[2rem] border-4 border-blue-200 shadow-inner mb-3 lg:mb-4 flex items-center justify-center text-center overflow-hidden">
-                        <h2 class="text-xl md:text-2xl lg:text-3xl font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full">
+                    <!-- 題目主體：縮小上下內距(p)與字體大小，利用 overflow-hidden 保證不溢出且不捲動 -->
+                    <div class="flex-1 min-h-0 bg-blue-50 p-3 lg:p-5 rounded-[1.5rem] lg:rounded-[2rem] border-4 border-blue-200 shadow-inner mb-3 flex items-center justify-center text-center overflow-hidden">
+                        <h2 class="text-lg md:text-xl lg:text-2xl font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full">
                             ${parseZhuyin(q.question)}
                         </h2>
                     </div>
                     
-                    <div class="flex-shrink-0 grid gap-3 lg:gap-4">
+                    <div class="flex-shrink-0 grid gap-2 lg:gap-3">
                         ${optionsHtml}
                     </div>
                 </div>
