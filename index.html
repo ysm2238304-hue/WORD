@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <!-- 加入 viewport-fit=cover 與 user-scalable=no 雙重鎖死縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- ==================================================
+         Web App 全螢幕模式標籤 (支援「加到主畫面」功能)
+         ================================================== -->
+    <meta name="mobile-web-app-capable" content="yes"> <!-- 針對 Android Chrome -->
+    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- 針對 iOS Safari -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- 隱藏/透明化系統狀態列 -->
+    <meta name="apple-mobile-web-app-title" content="環保小尖兵"> <!-- 加入主畫面時的預設 App 名稱 -->
+    <meta name="theme-color" content="#EFF6FF"> <!-- 設定系統狀態列底色，對應 Tailwind 的 blue-50 -->
+    
     <title>環保小尖兵-平板九宮格闖關</title>
 
     <!-- 引入 Tailwind CSS -->
@@ -130,7 +140,7 @@
     <div id="app" class="relative z-10 w-full h-[100dvh] max-w-[1350px] mx-auto p-[2dvh] md:p-[3dvh] lg:p-[4dvh] flex items-center justify-center overflow-hidden"></div>
 
     <script>
-        // --- 處理載入保護幕 (延遲 300ms 等 Safari 排版完畢才顯示) ---
+        // --- 處理載入保護幕 (延遲 300ms 等排版完畢才顯示) ---
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const loader = document.getElementById('loading-screen');
@@ -225,7 +235,7 @@
             {
                 villain: '碎裂炸彈怪', villainIcon: monsters.danger,
                 scenario: "🤸 尖{ㄐㄧㄢ}尖{ㄐㄧㄢ}的{ㄉㄜ˙}【碎{ㄙㄨㄟˋ}裂{ㄌㄧㄝˋ}炸{ㄓㄚˋ}彈{ㄉㄢˋ}怪{ㄍㄨㄞˋ}】示{ㄕˋ}範{ㄈㄢˋ}了{ㄌㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}超{ㄔㄠ}可{ㄎㄜˇ}怕{ㄆㄚˋ}的{ㄉㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}：踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}！",
-                question: "看{ㄎㄢˋ}到{ㄉㄠˋ}「坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」時{ㄕˊ}，應{ㄧㄥ}該{ㄍㄞ}怎{ㄗㄣˇ}麼{ㄇㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}才{ㄘㄞˊ}安{ㄢ}全{ㄑㄩㄢˊ}又{ㄧㄡˋ}衛{ㄨㄟˋ}生{ㄕㄥ}？",
+                question: "看{ㄎㄢˋ}到{ㄉㄠˋ}「坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」時{ㄕˊ}應{ㄧㄥ}該{ㄍㄞ}怎{ㄗㄣˇ}麼{ㄇㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}才{ㄘㄞˊ}安{ㄢ}全{ㄑㄩㄢˊ}又{ㄧㄡˋ}衛{ㄨㄟˋ}生{ㄕㄥ}？",
                 options: ["(A) 練{ㄌㄧㄢˋ}武{ㄨˇ}功{ㄍㄨㄥ}，雙{ㄕㄨㄤ}腳{ㄐㄧㄠˇ}踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}座{ㄗㄨㄛˋ}上{ㄕㄤˋ}", "(B) 乖{ㄍㄨㄞ}乖{ㄍㄨㄞ}坐{ㄗㄨㄛˋ}著{ㄓㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}"], correctAnswer: 1,
                 explanation: "蹲{ㄉㄨㄣ}踩{ㄘㄞˇ}在{ㄗㄞˋ}坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}非{ㄈㄟ}常{ㄔㄤˊ}危{ㄨㄟˊ}險{ㄒㄧㄢˇ}，陶{ㄊㄠˊ}瓷{ㄘˊ}破{ㄆㄛˋ}裂{ㄌㄧㄝˋ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}人{ㄖㄣˊ}受{ㄕㄡˋ}重{ㄓㄨㄥˋ}傷{ㄕㄤ}！請{ㄑㄧㄥˇ}務{ㄨˋ}必{ㄅㄧˋ}坐{ㄗㄨㄛˋ}著{ㄓㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}。"
             },
