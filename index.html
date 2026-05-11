@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Web App 全螢幕模式標籤 -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,23 +16,34 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* 用於徹底強制隱藏畫面的工具類 */
         .hidden-view { display: none !important; }
 
         @media screen and (orientation: portrait) {
             .portrait-warning { display: flex; }
-            #app { display: none; }
+            #app-wrapper { display: none; }
         }
         @media screen and (orientation: landscape) {
             .portrait-warning { display: none; }
-            #app { display: block; }
+            #app-wrapper { display: flex; }
+        }
+
+        /* --- 核心魔法：鎖定 16:9 比例的容器 --- */
+        .game-box {
+            width: 100%;
+            height: 100%;
+            /* 透過視窗寬高交叉限制，強制鎖出完美的 16:9 畫布 */
+            max-width: calc(100vh * 16 / 9);
+            max-height: calc(100vw * 9 / 16);
+            /* 開啟容器查詢，讓內部元素使用 cqw / cqh 進行完美等比縮放 */
+            container-type: size;
+            position: relative;
         }
 
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoom-in { from { opacity: 0; transform: scale3d(0.8, 0.8, 1); } to { opacity: 1; transform: scale3d(1, 1, 1); } }
-        @keyframes slide-up { from { opacity: 0; transform: translate3d(0, 4vh, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+        @keyframes slide-up { from { opacity: 0; transform: translate3d(0, 4cqh, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
         @keyframes bounce-slow { 0%, 100% { transform: translate3d(0, -5%, 0); } 50% { transform: translate3d(0, 5%, 0); } }
-        @keyframes float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -10px, 0); } }
+        @keyframes float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -2cqh, 0); } }
         
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; will-change: opacity; opacity: 0; }
         .animate-zoom-in { animation: zoom-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; will-change: transform, opacity; opacity: 0; }
@@ -59,21 +69,21 @@
         }
         
         .grid-btn {
-            box-shadow: 0 clamp(4px, 1vh, 8px) 0 rgba(0,0,0,0.15);
+            box-shadow: 0 0.5cqh 1cqh 0 rgba(0,0,0,0.15);
             transition: all 0.1s;
             will-change: transform, box-shadow;
         }
         .grid-btn:active:not(.disabled) {
-            transform: translate3d(0, clamp(4px, 1vh, 8px), 0) !important;
+            transform: translate3d(0, 0.5cqh, 0) !important;
             box-shadow: 0 0 0 rgba(0,0,0,0.15) !important;
         }
         .grid-btn.disabled {
-            box-shadow: inset 0 clamp(3px, 1vh, 6px) rgba(0,0,0,0.1) !important;
+            box-shadow: inset 0 0.5cqh 1cqh rgba(0,0,0,0.1) !important;
             transform: translate3d(0, 0, 0) !important;
             cursor: not-allowed;
         }
 
-        .z-word { display: inline-flex; align-items: center; margin: 0 1px clamp(2px, 0.5vh, 4px) 1px; vertical-align: middle; }
+        .z-word { display: inline-flex; align-items: center; margin: 0 1px 0.2cqh 1px; vertical-align: middle; }
         .z-base { line-height: 1; }
         .z-ruby { display: inline-flex; flex-direction: row; font-size: 0.45em; font-weight: 800; color: #4B5563; margin-left: 2px; }
         .z-symbols { display: flex; flex-direction: column; justify-content: center; }
@@ -83,32 +93,30 @@
         .zhuyin-text { line-height: 1.8 !important; word-break: break-all; }
     </style>
 </head>
-<body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-[100vh] w-[100vw] overflow-hidden flex items-center justify-center">
+<body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 w-screen h-screen overflow-hidden">
 
-    <!-- 載入保護幕 -->
     <div id="loading-screen" class="fixed inset-0 z-[999] bg-blue-50 flex flex-col items-center justify-center transition-opacity duration-500">
-        <i data-lucide="loader-2" class="w-[10vh] h-[10vh] text-blue-500 animate-spin mb-[2vh]"></i>
-        <h2 class="text-[clamp(1.5rem,3vh,2.5rem)] font-black text-blue-800 tracking-widest">系統初始化中...</h2>
+        <i data-lucide="loader-2" class="w-[10vmin] h-[10vmin] text-blue-500 animate-spin mb-[2vmin]"></i>
+        <h2 class="text-[3vmin] font-black text-blue-800 tracking-widest">系統初始化中...</h2>
     </div>
 
-    <!-- 直式螢幕警告 -->
-    <div class="portrait-warning fixed inset-0 z-[900] bg-blue-600 text-white flex-col items-center justify-center p-[4vh] text-center">
-        <i data-lucide="rotate-ccw" class="w-[20vh] h-[20vh] mb-[4vh] animate-spin-slow"></i>
-        <h1 class="text-[clamp(2rem,6vh,4rem)] font-black mb-[2vh]">請將螢幕轉為橫向</h1>
-        <p class="text-[clamp(1.2rem,3vh,2rem)]">此遊戲專為橫向寬螢幕設計，以獲得最佳體驗！</p>
+    <div class="portrait-warning fixed inset-0 z-[900] bg-blue-600 text-white flex-col items-center justify-center p-[4vmin] text-center">
+        <i data-lucide="rotate-ccw" class="w-[20vmin] h-[20vmin] mb-[4vmin] animate-spin-slow"></i>
+        <h1 class="text-[5vmin] font-black mb-[2vmin]">請將螢幕轉為橫向</h1>
+        <p class="text-[3vmin]">此遊戲專為橫向寬螢幕設計，以獲得最佳體驗！</p>
     </div>
 
-    <!-- 背景裝飾 -->
+    <!-- 背景裝飾留在最底層滿版 -->
     <div class="fixed top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">
         <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[60%] bg-cyan-200/40 rounded-full blur-3xl"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[70%] bg-green-200/40 rounded-full blur-3xl"></div>
-        <div class="absolute top-[20%] left-[20%] w-[10vw] h-[5vh] bg-white/60 rounded-full blur-sm animate-[pulse_5s_ease-in-out_infinite]"></div>
-        <div class="absolute top-[60%] right-[15%] w-[15vw] h-[8vh] bg-white/60 rounded-full blur-sm animate-[pulse_7s_ease-in-out_infinite]"></div>
     </div>
 
-    <!-- 遊戲主要滿版容器：徹底移除 max-w，讓版面 100% 貼合視窗大小，避免比例跑位 -->
-    <div id="app" class="relative z-10 w-full h-full p-[2vh] md:p-[3vh] lg:p-[4vh] overflow-hidden">
-        <!-- 內容由 JS 初始化生成，達到 DOM 重用優化 -->
+    <!-- 絕對置中且鎖定比例的容器層 -->
+    <div id="app-wrapper" class="relative z-10 w-full h-full flex items-center justify-center p-[2vmin]">
+        <div id="app" class="game-box">
+            <!-- 內容由 JS 產生，內部皆使用 cqh (容器高度%) 與 cqw (容器寬度%) -->
+        </div>
     </div>
 
     <script>
@@ -121,16 +129,17 @@
             lastTouchEnd = now;
         }, { passive: false });
 
+        // 怪獸代碼全數轉換為 cqh 等比單位
         const monsters = {
-            cigarette: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[20vh] h-[35vh] max-w-[100px] max-h-[160px] bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[clamp(4px,1vh,8px)] border-gray-400 shadow-[10px_10px_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-[10%] relative animate-float"><div class="flex gap-[1vh] mt-[5%]"><div class="w-[1.5vh] h-[1.5vh] bg-gray-800 rounded-full"></div><div class="w-[1.5vh] h-[1.5vh] bg-gray-800 rounded-full"></div></div><div class="w-[4vh] h-[1vh] bg-gray-800 rounded-full mb-[15%]"></div><i data-lucide="wind" class="w-[60%] h-auto text-gray-400 absolute -top-[30%] animate-pulse"></i></div></div>`,
-            plastic: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-amber-300 to-orange-500 rounded-[20%] border-[clamp(4px,1vh,8px)] border-amber-700 shadow-[12px_12px_0_rgba(180,83,9,0.25)] flex items-center justify-center relative transform rotate-12 animate-float"><div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div><i data-lucide="skull" class="w-[50%] h-[50%] text-amber-900 z-10 drop-shadow-md"></i></div></div>`,
-            grandpa: `<div class="relative w-full h-full flex items-center justify-center"><div class="flex flex-col items-center animate-float scale-110"><div class="w-[22vh] h-[22vh] max-w-[100px] max-h-[100px] bg-amber-200 rounded-full border-[clamp(4px,1vh,8px)] border-gray-700 shadow-lg flex items-center justify-center relative z-10"><div class="flex gap-[0.5vh] absolute top-[25%]"><div class="w-[20%] aspect-square border-[clamp(2px,0.5vh,4px)] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-[30%] aspect-square bg-gray-800 rounded-full"></div></div><div class="w-[20%] aspect-square border-[clamp(2px,0.5vh,4px)] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-[30%] aspect-square bg-gray-800 rounded-full"></div></div></div><div class="w-[30%] h-[10%] bg-gray-400 rounded-full absolute bottom-[15%]"></div></div><div class="w-[28vh] h-[18vh] max-w-[130px] max-h-[80px] bg-blue-600 rounded-t-[40%] border-[clamp(4px,1vh,8px)] border-gray-700 shadow-xl -mt-[15%] relative z-0"></div></div></div>`,
-            ticket: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[28vh] h-[35vh] max-w-[130px] max-h-[160px] bg-gradient-to-b from-yellow-100 to-yellow-300 border-[clamp(4px,1vh,8px)] border-yellow-600 shadow-[10px_10px_0_rgba(202,138,4,0.3)] flex flex-col items-center justify-between py-[8%] relative animate-float rounded-xl"><div class="w-[50%] h-[8%] bg-yellow-600 rounded-full"></div><div class="flex gap-[1vh]"><div class="w-[2vh] h-[2vh] bg-red-500 border-[clamp(2px,0.5vh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div><div class="w-[2vh] h-[2vh] bg-red-500 border-[clamp(2px,0.5vh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div></div><i data-lucide="receipt" class="w-[50%] h-[50%] text-yellow-700 drop-shadow-md"></i><div class="text-[clamp(1.5rem,4vh,2rem)] font-black text-yellow-800">$</div></div></div>`,
-            block: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-purple-500 to-indigo-700 rounded-2xl border-[clamp(4px,1vh,8px)] border-indigo-900 shadow-[12px_12px_0_rgba(49,46,129,0.4)] flex flex-col items-center justify-center relative transform -rotate-6 animate-float"><div class="flex gap-[1vh] absolute top-[15%]"><div class="w-[20%] h-[10%] bg-indigo-900 transform rotate-12"></div><div class="w-[20%] h-[10%] bg-indigo-900 transform -rotate-12"></div></div><div class="flex gap-[1.5vh] mt-[15%]"><div class="w-[1.5vh] h-[1.5vh] bg-white rounded-full"></div><div class="w-[1.5vh] h-[1.5vh] bg-white rounded-full"></div></div><i data-lucide="ban" class="w-[45%] h-[45%] text-pink-400 mt-[5%] drop-shadow-md"></i></div></div>`,
-            water: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1vh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(29,78,216,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;"><div class="flex gap-[1.5vh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div></div><div class="w-[30%] h-[10%] border-b-[clamp(2px,0.5vh,4px)] border-blue-900 rounded-full"></div><i data-lucide="droplets" class="absolute -top-[15%] w-[35%] h-[35%] text-cyan-200 drop-shadow-md animate-pulse"></i></div></div>`,
-            danger: `<div class="relative w-full h-full flex items-center justify-center"><div class="flex flex-col items-center animate-float scale-110"><div class="w-[3vh] h-[4vh] bg-gray-800 rounded-t-md relative z-0 mb-[-1vh]"></div><div class="w-[28vh] h-[28vh] max-w-[140px] max-h-[140px] bg-gradient-to-br from-gray-600 to-red-900 rounded-full border-[clamp(4px,1vh,8px)] border-gray-900 shadow-[10px_10px_0_rgba(0,0,0,0.4)] flex flex-col items-center justify-center relative z-10"><div class="flex gap-[2vh] mb-[5%] mt-[5%]"><i data-lucide="x" class="w-[4vh] h-[4vh] text-yellow-400 font-black drop-shadow-md"></i><i data-lucide="x" class="w-[4vh] h-[4vh] text-yellow-400 font-black drop-shadow-md"></i></div><i data-lucide="zap" class="w-[10vh] h-[10vh] text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)] fill-yellow-300 animate-pulse"></i></div></div></div>`,
-            stinky: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[35vh] h-[30vh] max-w-[160px] max-h-[144px] bg-gradient-to-br from-lime-400 to-green-600 border-[clamp(4px,1vh,8px)] border-green-800 shadow-[12px_12px_0_rgba(21,128,61,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 60% 40% 70% / 60% 50% 70% 40%;"><div class="flex gap-[2vh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div></div><i data-lucide="wind" class="w-[30%] h-[30%] text-green-900 opacity-60 absolute -top-[20%]"></i><div class="w-[25%] h-[20%] border-b-[clamp(2px,0.5vh,4px)] border-green-900 rounded-full mt-[5%]"></div></div></div>`,
-            slip: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1vh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(30,58,138,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 50% 10%;"><div class="flex gap-[1.5vh] mb-[10%]"><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div></div><div class="w-[35%] h-[25%] border-t-[clamp(4px,1vh,6px)] border-blue-800 rounded-full mt-[5%]"></div><div class="absolute -right-[10%] top-[10%] w-[20%] h-[20%] bg-cyan-200 rounded-full border-[clamp(2px,0.5vh,3px)] border-cyan-500"></div><div class="absolute -left-[15%] bottom-[10%] w-[25%] h-[25%] bg-blue-300 rounded-full border-[clamp(2px,0.5vh,3px)] border-blue-600"></div></div></div>`
+            cigarette: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[20cqh] h-[35cqh] bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[0.8cqh] border-gray-400 shadow-[1cqh_1cqh_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-[10%] relative animate-float"><div class="flex gap-[1cqh] mt-[5%]"><div class="w-[1.5cqh] h-[1.5cqh] bg-gray-800 rounded-full"></div><div class="w-[1.5cqh] h-[1.5cqh] bg-gray-800 rounded-full"></div></div><div class="w-[4cqh] h-[1cqh] bg-gray-800 rounded-full mb-[15%]"></div><i data-lucide="wind" class="w-[60%] h-auto text-gray-400 absolute -top-[30%] animate-pulse"></i></div></div>`,
+            plastic: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30cqh] h-[30cqh] bg-gradient-to-br from-amber-300 to-orange-500 rounded-[20%] border-[0.8cqh] border-amber-700 shadow-[1.2cqh_1.2cqh_0_rgba(180,83,9,0.25)] flex items-center justify-center relative transform rotate-12 animate-float"><div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div><i data-lucide="skull" class="w-[50%] h-[50%] text-amber-900 z-10 drop-shadow-md"></i></div></div>`,
+            grandpa: `<div class="relative w-full h-full flex items-center justify-center"><div class="flex flex-col items-center animate-float scale-110"><div class="w-[22cqh] h-[22cqh] bg-amber-200 rounded-full border-[0.8cqh] border-gray-700 shadow-lg flex items-center justify-center relative z-10"><div class="flex gap-[0.5cqh] absolute top-[25%]"><div class="w-[20%] aspect-square border-[0.4cqh] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-[30%] aspect-square bg-gray-800 rounded-full"></div></div><div class="w-[20%] aspect-square border-[0.4cqh] border-gray-700 rounded-full bg-white flex items-center justify-center"><div class="w-[30%] aspect-square bg-gray-800 rounded-full"></div></div></div><div class="w-[30%] h-[10%] bg-gray-400 rounded-full absolute bottom-[15%]"></div></div><div class="w-[28cqh] h-[18cqh] bg-blue-600 rounded-t-[40%] border-[0.8cqh] border-gray-700 shadow-xl -mt-[15%] relative z-0"></div></div></div>`,
+            ticket: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[28cqh] h-[35cqh] bg-gradient-to-b from-yellow-100 to-yellow-300 border-[0.8cqh] border-yellow-600 shadow-[1cqh_1cqh_0_rgba(202,138,4,0.3)] flex flex-col items-center justify-between py-[8%] relative animate-float rounded-xl"><div class="w-[50%] h-[8%] bg-yellow-600 rounded-full"></div><div class="flex gap-[1cqh]"><div class="w-[2cqh] h-[2cqh] bg-red-500 border-[0.4cqh] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div><div class="w-[2cqh] h-[2cqh] bg-red-500 border-[0.4cqh] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div></div><i data-lucide="receipt" class="w-[50%] h-[50%] text-yellow-700 drop-shadow-md"></i><div class="text-[4cqh] font-black text-yellow-800">$</div></div></div>`,
+            block: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30cqh] h-[30cqh] bg-gradient-to-br from-purple-500 to-indigo-700 rounded-2xl border-[0.8cqh] border-indigo-900 shadow-[1.2cqh_1.2cqh_0_rgba(49,46,129,0.4)] flex flex-col items-center justify-center relative transform -rotate-6 animate-float"><div class="flex gap-[1cqh] absolute top-[15%]"><div class="w-[20%] h-[10%] bg-indigo-900 transform rotate-12"></div><div class="w-[20%] h-[10%] bg-indigo-900 transform -rotate-12"></div></div><div class="flex gap-[1.5cqh] mt-[15%]"><div class="w-[1.5cqh] h-[1.5cqh] bg-white rounded-full"></div><div class="w-[1.5cqh] h-[1.5cqh] bg-white rounded-full"></div></div><i data-lucide="ban" class="w-[45%] h-[45%] text-pink-400 mt-[5%] drop-shadow-md"></i></div></div>`,
+            water: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30cqh] h-[30cqh] bg-gradient-to-b from-cyan-300 to-blue-500 border-[0.8cqh] border-blue-700 shadow-[1cqh_1cqh_0_rgba(29,78,216,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;"><div class="flex gap-[1.5cqh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[0.4cqh] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[0.4cqh] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div></div><div class="w-[30%] h-[10%] border-b-[0.4cqh] border-blue-900 rounded-full"></div><i data-lucide="droplets" class="absolute -top-[15%] w-[35%] h-[35%] text-cyan-200 drop-shadow-md animate-pulse"></i></div></div>`,
+            danger: `<div class="relative w-full h-full flex items-center justify-center"><div class="flex flex-col items-center animate-float scale-110"><div class="w-[3cqh] h-[4cqh] bg-gray-800 rounded-t-md relative z-0 mb-[-1cqh]"></div><div class="w-[28cqh] h-[28cqh] bg-gradient-to-br from-gray-600 to-red-900 rounded-full border-[0.8cqh] border-gray-900 shadow-[1cqh_1cqh_0_rgba(0,0,0,0.4)] flex flex-col items-center justify-center relative z-10"><div class="flex gap-[2cqh] mb-[5%] mt-[5%]"><i data-lucide="x" class="w-[4cqh] h-[4cqh] text-yellow-400 font-black drop-shadow-md"></i><i data-lucide="x" class="w-[4cqh] h-[4cqh] text-yellow-400 font-black drop-shadow-md"></i></div><i data-lucide="zap" class="w-[10cqh] h-[10cqh] text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)] fill-yellow-300 animate-pulse"></i></div></div></div>`,
+            stinky: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[35cqh] h-[30cqh] bg-gradient-to-br from-lime-400 to-green-600 border-[0.8cqh] border-green-800 shadow-[1.2cqh_1.2cqh_0_rgba(21,128,61,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 60% 40% 70% / 60% 50% 70% 40%;"><div class="flex gap-[2cqh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[0.4cqh] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[0.4cqh] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div></div><i data-lucide="wind" class="w-[30%] h-[30%] text-green-900 opacity-60 absolute -top-[20%]"></i><div class="w-[25%] h-[20%] border-b-[0.4cqh] border-green-900 rounded-full mt-[5%]"></div></div></div>`,
+            slip: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30cqh] h-[30cqh] bg-gradient-to-b from-cyan-300 to-blue-500 border-[0.8cqh] border-blue-700 shadow-[1cqh_1cqh_0_rgba(30,58,138,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 50% 10%;"><div class="flex gap-[1.5cqh] mb-[10%]"><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[0.4cqh] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[0.4cqh] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div></div><div class="w-[35%] h-[25%] border-t-[0.6cqh] border-blue-800 rounded-full mt-[5%]"></div><div class="absolute -right-[10%] top-[10%] w-[20%] h-[20%] bg-cyan-200 rounded-full border-[0.3cqh] border-cyan-500"></div><div class="absolute -left-[15%] bottom-[10%] w-[25%] h-[25%] bg-blue-300 rounded-full border-[0.3cqh] border-blue-600"></div></div></div>`
         };
 
         const questions = [
@@ -176,155 +185,155 @@
 
         function initViews() {
             const appDiv = document.getElementById('app');
+            // 將內部樣式全數從 vh/vw 替換為 cqh/cqw 比例
             appDiv.innerHTML = `
                 <!-- Start View -->
-                <div id="view-start" class="hidden-view w-full h-full bg-white/95 backdrop-blur-md rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1.5rem,4vh,3rem)] flex flex-row items-center justify-center gap-[4vw] animate-zoom-in">
-                    <div class="flex-shrink-0 w-[40%] flex items-center justify-center animate-bounce-slow h-full">
-                        <!-- 加入動態防爆寬度限制 max-w-[clamp(...)]，確保不會在特別窄的橫向螢幕溢出 -->
-                        <div class="w-full max-w-[clamp(200px,60vh,400px)] aspect-square bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[clamp(6px,1.5vh,12px)] border-white relative">
-                            <i data-lucide="leaf" class="w-[40%] h-[40%] text-white"></i>
+                <div id="view-start" class="hidden-view w-full h-full bg-white/95 backdrop-blur-md rounded-[4cqh] shadow-2xl border-[1cqh] border-white p-[4cqh] flex flex-row items-center justify-center gap-[4cqw] animate-zoom-in">
+                    <div class="flex-shrink-0 w-[40cqw] flex items-center justify-center animate-bounce-slow h-full">
+                        <div class="w-[50cqh] h-[50cqh] max-w-full bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_1.5cqh_4cqh_rgba(34,197,94,0.3)] border-[1.2cqh] border-white relative">
+                            <i data-lucide="leaf" class="w-[45%] h-[45%] text-white"></i>
                             <i data-lucide="sparkles" class="w-[15%] h-[15%] text-yellow-300 absolute top-[15%] right-[15%] animate-pulse"></i>
                         </div>
                     </div>
-                    <div class="flex-1 flex flex-col items-start justify-between h-full py-[1vh]">
-                        <div class="flex items-center gap-[1.5vw] bg-white shadow-sm border-2 border-gray-100 rounded-full py-[1.5vh] px-[2vw] w-max">
-                            <img src="image_1c45dd.png" alt="南投環保局標誌" class="h-[clamp(30px,6vh,60px)] object-contain" />
-                            <h2 class="text-green-800 font-black text-[clamp(1rem,2.5vh,1.8rem)] tracking-widest pt-1">南投縣政府環境保護局</h2>
+                    <div class="flex-1 flex flex-col items-start justify-between h-full py-[1cqh]">
+                        <div class="flex items-center gap-[1cqw] bg-white shadow-sm border-[0.3cqh] border-gray-100 rounded-full py-[1.5cqh] px-[2cqw] w-max">
+                            <img src="image_1c45dd.png" alt="南投環保局標誌" class="h-[5cqh] object-contain" />
+                            <h2 class="text-green-800 font-black text-[2.2cqh] tracking-widest pt-1">南投縣政府環境保護局</h2>
                         </div>
-                        <h1 class="font-black leading-tight drop-shadow-md flex items-center justify-start w-full whitespace-nowrap gap-[1vw] mb-[1vh]">
-                            <span class="text-blue-800 text-[clamp(1.2rem,3.5vw,3.5rem)]">環保小尖兵</span>
-                            <i data-lucide="shield-check" class="h-[clamp(1.5rem,4vw,4rem)] w-auto text-green-500 drop-shadow-sm flex-shrink-0"></i>
-                            <span class="text-orange-500 text-[clamp(1.2rem,3.5vw,3.5rem)]">沙包挑戰賽！</span>
+                        <h1 class="font-black leading-tight drop-shadow-md flex items-center justify-start w-full whitespace-nowrap gap-[1cqw] mb-[1cqh]">
+                            <span class="text-blue-800 text-[6cqh]">環保小尖兵</span>
+                            <i data-lucide="shield-check" class="h-[6cqh] w-auto text-green-500 drop-shadow-sm flex-shrink-0"></i>
+                            <span class="text-orange-500 text-[6cqh]">沙包挑戰賽！</span>
                         </h1>
-                        <div class="w-full bg-blue-50/80 p-[clamp(1.5rem,3.5vh,2.5rem)] rounded-[clamp(1.5rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col justify-center gap-[1.5vh]">
-                            <h3 class="text-center font-black text-[clamp(1.5rem,3.5vh,2rem)] text-orange-600 tracking-widest drop-shadow-sm">~~ 歡迎來到敦和國小 ~~</h3>
-                            <div class="w-full flex flex-col gap-[1vh] items-center justify-center">
-                                <p class="text-gray-800 font-black text-[clamp(1.2rem,3vh,1.8rem)]">快拿起手上的沙包</p>
-                                <p class="text-gray-800 font-black text-[clamp(1.2rem,3vh,1.8rem)]">丟向九宮格選擇題目</p>
-                                <p class="text-blue-700 font-black text-[clamp(1.5rem,3.5vh,2rem)] drop-shadow-sm mt-[0.5vh]">一起打敗污染怪獸吧!!!</p>
+                        <div class="w-full bg-blue-50/80 p-[3.5cqh] rounded-[3cqh] border-[0.6cqh] border-dashed border-blue-300 shadow-inner flex flex-col justify-center gap-[1.5cqh]">
+                            <h3 class="text-center font-black text-[3cqh] text-orange-600 tracking-widest drop-shadow-sm">~~ 歡迎來到敦和國小 ~~</h3>
+                            <div class="w-full flex flex-col gap-[1cqh] items-center justify-center">
+                                <p class="text-gray-800 font-black text-[2.5cqh]">快拿起手上的沙包</p>
+                                <p class="text-gray-800 font-black text-[2.5cqh]">丟向九宮格選擇題目</p>
+                                <p class="text-blue-700 font-black text-[3.5cqh] drop-shadow-sm mt-[0.5cqh]">一起打敗污染怪獸吧!!!</p>
                             </div>
                         </div>
-                        <button onclick="handleStart()" class="grid-btn bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-[clamp(1.5rem,3.5vh,2.5rem)] py-[clamp(1.2rem,2.5vh,2rem)] px-[clamp(2rem,5vw,4rem)] rounded-full flex items-center justify-center gap-[1vw] hover:from-green-500 hover:to-green-700">
-                            <i data-lucide="play-circle" class="w-[clamp(2rem,4.5vh,3.5rem)] h-[clamp(2rem,4.5vh,3.5rem)]"></i> 開始挑戰！
+                        <button onclick="handleStart()" class="grid-btn bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-[4cqh] py-[2.5cqh] px-[4cqw] rounded-full flex items-center justify-center gap-[1cqw] hover:from-green-500 hover:to-green-700">
+                            <i data-lucide="play-circle" class="w-[5cqh] h-[5cqh]"></i> 開始挑戰！
                         </button>
                     </div>
                 </div>
 
                 <!-- Grid View -->
-                <div id="view-grid" class="hidden-view w-full h-full flex flex-row gap-[3vw] animate-fade-in">
-                    <div class="flex-shrink-0 w-[35%] h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-[clamp(1rem,3.5vh,2.5rem)] rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white relative">
-                        <div class="flex flex-col items-center justify-center gap-[1.5vh] bg-gradient-to-b from-green-50 to-blue-50 px-[2vw] py-[2vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(2px,0.5vh,4px)] border-white shadow-md flex-shrink-0 w-full mx-auto">
-                            <div class="flex items-center justify-center gap-[1vw] w-full">
-                                <i data-lucide="sparkles" class="w-[clamp(1.5rem,3.5vh,2.5rem)] h-auto text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
-                                <h2 class="text-green-800 font-black text-[clamp(1.2rem,3vh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
+                <div id="view-grid" class="hidden-view w-full h-full flex flex-row gap-[3cqw] animate-fade-in">
+                    <div class="flex-shrink-0 w-[35cqw] h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-[3.5cqh] rounded-[4cqh] shadow-2xl border-[1cqh] border-white relative">
+                        <div class="flex flex-col items-center justify-center gap-[1.5cqh] bg-gradient-to-b from-green-50 to-blue-50 px-[2cqw] py-[2cqh] rounded-[2cqh] border-[0.4cqh] border-white shadow-md flex-shrink-0 w-full mx-auto">
+                            <div class="flex items-center justify-center gap-[1cqw] w-full">
+                                <i data-lucide="sparkles" class="w-[3cqh] h-auto text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
+                                <h2 class="text-green-800 font-black text-[2.8cqh] tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
                             </div>
-                            <div class="w-[80%] h-[2px] bg-gray-300/50 rounded-full"></div>
-                            <div class="flex items-center justify-center gap-[1vw] w-full">
-                                <h2 class="text-blue-800 font-black text-[clamp(1.2rem,3vh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">無菸好環境</h2>
-                                <i data-lucide="droplets" class="w-[clamp(1.5rem,3.5vh,2.5rem)] h-auto text-cyan-500 drop-shadow-sm animate-bounce-slow flex-shrink-0"></i>
+                            <div class="w-[80%] h-[0.3cqh] bg-gray-300/50 rounded-full"></div>
+                            <div class="flex items-center justify-center gap-[1cqw] w-full">
+                                <h2 class="text-blue-800 font-black text-[2.8cqh] tracking-wider drop-shadow-sm text-center whitespace-nowrap">無菸好環境</h2>
+                                <i data-lucide="droplets" class="w-[3cqh] h-auto text-cyan-500 drop-shadow-sm animate-bounce-slow flex-shrink-0"></i>
                             </div>
                         </div>
                         <div class="flex flex-col items-center justify-center flex-1 min-h-0">
-                            <div class="w-[clamp(4rem,10vh,6rem)] h-[clamp(4rem,10vh,6rem)] bg-green-100 rounded-full flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-green-400 shadow-md mb-[2vh]">
+                            <div class="w-[12cqh] h-[12cqh] bg-green-100 rounded-full flex items-center justify-center border-[0.6cqh] border-green-400 shadow-md mb-[2cqh]">
                                 <i data-lucide="leaf" class="w-[45%] h-[45%] text-green-500"></i>
                             </div>
-                            <h2 class="text-[clamp(1.8rem,4vh,2.5rem)] font-black text-gray-800 mb-[1vh]">請選題！</h2>
-                            <p class="text-green-600 font-bold text-[clamp(1.2rem,3vh,1.5rem)]">目前得分：<span id="grid-score" class="text-[clamp(2rem,5vh,3rem)] text-orange-500 ml-2 drop-shadow-sm">0</span></p>
+                            <h2 class="text-[4cqh] font-black text-gray-800 mb-[1cqh]">請選題！</h2>
+                            <p class="text-green-600 font-bold text-[2.5cqh]">目前得分：<span id="grid-score" class="text-[5cqh] text-orange-500 ml-2 drop-shadow-sm">0</span></p>
                         </div>
-                        <div class="flex flex-col gap-[2vh] flex-shrink-0">
-                            <div class="bg-blue-50/80 p-[2vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 flex flex-col items-center justify-center">
-                                <i data-lucide="target" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-blue-500 mb-[1vh] animate-bounce"></i>
-                                <p class="text-[clamp(1rem,2.5vh,1.5rem)] font-bold text-center text-gray-700 leading-snug">沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span></p>
+                        <div class="flex flex-col gap-[2cqh] flex-shrink-0">
+                            <div class="bg-blue-50/80 p-[2cqh] rounded-[2cqh] border-[0.6cqh] border-dashed border-blue-300 flex flex-col items-center justify-center">
+                                <i data-lucide="target" class="w-[4cqh] h-auto text-blue-500 mb-[1cqh] animate-bounce"></i>
+                                <p class="text-[2.2cqh] font-bold text-center text-gray-700 leading-snug">沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span></p>
                             </div>
-                            <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[clamp(1rem,3vh,2rem)] py-[2vh] shadow-sm border-[clamp(3px,0.5vh,6px)] border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-[1vw] font-black">
-                                <i data-lucide="rotate-ccw" class="w-[clamp(1.2rem,3vh,2rem)] h-auto"></i>
-                                <span class="text-[clamp(1.2rem,3vh,2rem)]">重新開始</span>
+                            <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[2cqh] py-[2cqh] shadow-sm border-[0.5cqh] border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-[1cqw] font-black">
+                                <i data-lucide="rotate-ccw" class="w-[3cqh] h-auto"></i>
+                                <span class="text-[2.8cqh]">重新開始</span>
                             </button>
                         </div>
                     </div>
-                    <div class="flex-1 h-full bg-white/70 backdrop-blur-md p-[clamp(1.5rem,4vh,3rem)] rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white flex items-center justify-center">
-                        <!-- 加入動態防爆寬度限制 max-w-[min(100%,75vh)]，確保不會把版面撐破 -->
-                        <div id="grid-container" class="w-full max-w-[min(100%,75vh)] aspect-square grid grid-cols-3 gap-[2.5vh]">
-                            <!-- Grid buttons injected here once -->
+                    <div class="flex-1 h-full bg-white/70 backdrop-blur-md p-[4cqh] rounded-[4cqh] shadow-2xl border-[1cqh] border-white flex items-center justify-center">
+                        <div id="grid-container" class="w-full max-w-[80cqh] aspect-square grid grid-cols-3 gap-[2.5cqh]">
+                            <!-- Grid buttons -->
                         </div>
                     </div>
                 </div>
 
                 <!-- Playing View -->
-                <div id="view-playing" class="hidden-view w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1rem,3vh,2.5rem)] flex flex-row gap-[3vw] animate-slide-up relative">
-                    <div class="flex-shrink-0 w-[30%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1rem,3vh,2rem)] flex flex-col items-center justify-between border-[clamp(4px,0.8vh,10px)] border-gray-300 relative shadow-inner">
-                        <div class="absolute top-[2vh] left-[2vw] bg-blue-600 text-white font-black px-[1vw] py-[1vh] rounded-xl text-[clamp(0.8rem,2vh,1.2rem)] shadow-md border-2 border-blue-400 z-20 flex items-center gap-[0.5vw]">
-                            <i data-lucide="hash" class="w-[clamp(1rem,2.5vh,1.5rem)] h-auto"></i> 題 <span id="play-qnum"></span>
+                <div id="view-playing" class="hidden-view w-full h-full bg-white/95 backdrop-blur-xl rounded-[4cqh] shadow-2xl border-[1cqh] border-white p-[3cqh] flex flex-row gap-[3cqw] animate-slide-up relative">
+                    <div class="flex-shrink-0 w-[30cqw] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[3cqh] p-[3cqh] flex flex-col items-center justify-between border-[0.8cqh] border-gray-300 relative shadow-inner">
+                        <div class="absolute top-[2cqh] left-[2cqw] bg-blue-600 text-white font-black px-[1cqw] py-[1cqh] rounded-[1cqh] text-[2cqh] shadow-md border-[0.3cqh] border-blue-400 z-20 flex items-center gap-[0.5cqw]">
+                            <i data-lucide="hash" class="w-[2.5cqh] h-auto"></i> 題 <span id="play-qnum"></span>
                         </div>
                         <div class="flex-1 w-full min-h-0 flex items-center justify-center relative">
                             <div class="absolute w-[85%] aspect-square bg-gray-300/40 rounded-full blur-xl transform translate-y-[10%]"></div>
                             <div id="play-monster-container"></div>
                         </div>
-                        <div class="bg-white/90 px-[1.5vw] py-[1.5vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
-                            <span class="text-[clamp(0.8rem,2vh,1.2rem)] font-bold text-gray-500 block mb-[0.5vh]">遇到污染怪獸：</span>
-                            <span id="play-monster-name" class="text-[clamp(1.5rem,3.5vh,2.5rem)] font-black text-red-600 drop-shadow-sm"></span>
+                        <div class="bg-white/90 px-[1.5cqw] py-[1.5cqh] rounded-[2cqh] border-[0.5cqh] border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
+                            <span class="text-[2cqh] font-bold text-gray-500 block mb-[0.5cqh]">遇到污染怪獸：</span>
+                            <span id="play-monster-name" class="text-[3.5cqh] font-black text-red-600 drop-shadow-sm"></span>
                         </div>
                     </div>
                     <div class="flex-1 h-full flex flex-col justify-between py-0">
-                        <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-[clamp(1rem,2.5vh,1.5rem)] rounded-[clamp(1rem,3vh,2rem)] border-l-[clamp(4px,0.8vh,8px)] border-amber-400 shadow-sm flex items-center gap-[1vw]">
-                            <i data-lucide="alert-circle" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto text-amber-600 flex-shrink-0"></i>
-                            <span id="play-scenario" class="leading-relaxed zhuyin-text w-full text-[clamp(1rem,2.5vh,1.5rem)]"></span>
+                        <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-[2cqh] rounded-[2cqh] border-l-[0.8cqh] border-amber-400 shadow-sm flex items-center gap-[1cqw]">
+                            <i data-lucide="alert-circle" class="w-[4cqh] h-auto text-amber-600 flex-shrink-0"></i>
+                            <span id="play-scenario" class="leading-relaxed zhuyin-text w-full text-[2.8cqh]"></span>
                         </div>
-                        <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,3vh,2.5rem)] rounded-[clamp(1.5rem,4vh,3rem)] border-[clamp(3px,0.5vh,6px)] border-blue-200 shadow-inner flex items-center justify-center text-center my-[2vh]">
-                            <h2 id="play-question" class="text-[clamp(1.2rem,3.5vh,2.2rem)] font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full"></h2>
+                        <div class="flex-1 min-h-0 bg-blue-50 p-[3cqh] rounded-[3cqh] border-[0.5cqh] border-blue-200 shadow-inner flex items-center justify-center text-center my-[2cqh]">
+                            <h2 id="play-question" class="text-[3.8cqh] font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full"></h2>
                         </div>
-                        <div id="play-options" class="flex-shrink-0 flex flex-col gap-[1.5vh]"></div>
+                        <div id="play-options" class="flex-shrink-0 flex flex-col gap-[1.5cqh]"></div>
                     </div>
-                    <div id="play-feedback" class="hidden-view absolute inset-0 z-50 flex items-center justify-center p-[4vh] bg-gray-900/70 backdrop-blur-sm rounded-[clamp(1.5rem,4vh,3rem)] animate-fade-in"></div>
+                    
+                    <div id="play-feedback" class="hidden-view absolute inset-0 z-50 flex items-center justify-center p-[4cqh] bg-gray-900/70 backdrop-blur-sm rounded-[4cqh] animate-fade-in"></div>
                 </div>
 
                 <!-- Result View -->
-                <div id="view-result" class="hidden-view w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1.5rem,4vh,3rem)] flex flex-row gap-[4vw] animate-zoom-in relative">
-                    <div class="absolute top-[-20%] right-[-10%] w-[30vh] h-[30vh] bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
-                    <div class="absolute bottom-[-10%] left-[-10%] w-[25vh] h-[25vh] bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
+                <div id="view-result" class="hidden-view w-full h-full bg-white/95 backdrop-blur-xl rounded-[4cqh] shadow-2xl border-[1cqh] border-white p-[4cqh] flex flex-row gap-[4cqw] animate-zoom-in relative">
+                    <div class="absolute top-[-20%] right-[-10%] w-[30cqh] h-[30cqh] bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute bottom-[-10%] left-[-10%] w-[25cqh] h-[25cqh] bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
                     
-                    <div id="result-badge-container" class="flex-shrink-0 w-[40%] h-full rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] flex flex-col items-center justify-evenly border-[clamp(6px,1vh,12px)] relative shadow-inner"></div>
+                    <div id="result-badge-container" class="flex-shrink-0 w-[40cqw] h-full rounded-[4cqh] p-[4cqh] flex flex-col items-center justify-evenly border-[1cqh] relative shadow-inner"></div>
                     
                     <div class="flex-1 h-full flex flex-col justify-between py-0">
-                        <div class="flex items-center gap-[1.5vw] bg-gray-50/80 px-[2vw] py-[1.5vh] rounded-full border-2 border-gray-200 shadow-sm w-max flex-shrink-0">
-                            <img src="image_1c45dd.png" class="h-[clamp(30px,6vh,60px)] object-contain" />
-                            <h3 class="text-[clamp(1rem,2.5vh,1.8rem)] font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
+                        <div class="flex items-center gap-[1.5cqw] bg-gray-50/80 px-[2cqw] py-[1.5cqh] rounded-full border-[0.4cqh] border-gray-200 shadow-sm w-max flex-shrink-0">
+                            <img src="image_1c45dd.png" class="h-[6cqh] object-contain" />
+                            <h3 class="text-[2.5cqh] font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
                         </div>
-                        <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,4vh,3rem)] rounded-[clamp(1.5rem,4vh,3rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center my-[2vh]">
-                            <div class="flex items-center gap-[1vw] mb-[2.5vh] flex-shrink-0">
-                                <i data-lucide="party-popper" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-orange-500 animate-bounce"></i>
-                                <h3 class="text-[clamp(1.5rem,3.5vh,2.5rem)] font-black text-blue-800">闖關結果報告</h3>
-                                <i data-lucide="party-popper" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-orange-500 animate-bounce transform -scale-x-100"></i>
+                        <div class="flex-1 min-h-0 bg-blue-50 p-[4cqh] rounded-[4cqh] border-[0.6cqh] border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center my-[2cqh]">
+                            <div class="flex items-center gap-[1cqw] mb-[2.5cqh] flex-shrink-0">
+                                <i data-lucide="party-popper" class="w-[5cqh] h-auto text-orange-500 animate-bounce"></i>
+                                <h3 class="text-[4cqh] font-black text-blue-800">闖關結果報告</h3>
+                                <i data-lucide="party-popper" class="w-[5cqh] h-auto text-orange-500 animate-bounce transform -scale-x-100"></i>
                             </div>
-                            <p id="result-message" class="text-[clamp(1.2rem,3vh,2rem)] font-bold text-gray-700 leading-snug text-center mb-[4vh] flex-shrink-0"></p>
-                            <div class="flex w-full justify-center gap-[3vw] flex-shrink-0">
-                                <div class="bg-white p-[clamp(1.2rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-md flex flex-col items-center min-w-[20vw]">
-                                    <div class="text-gray-500 font-bold mb-[1vh] flex items-center gap-[0.5vw] text-[clamp(1rem,2.5vh,1.5rem)]"><i data-lucide="target" class="w-[clamp(1.2rem,3vh,1.8rem)] h-auto text-orange-400"></i> 獲得分數</div>
-                                    <div id="result-score-val" class="text-[clamp(2.5rem,6vh,4.5rem)] font-black text-orange-500"></div>
+                            <p id="result-message" class="text-[3cqh] font-bold text-gray-700 leading-snug text-center mb-[4cqh] flex-shrink-0"></p>
+                            <div class="flex w-full justify-center gap-[3cqw] flex-shrink-0">
+                                <div class="bg-white p-[3cqh] rounded-[2cqh] border-[0.6cqh] border-white shadow-md flex flex-col items-center min-w-[20cqw]">
+                                    <div class="text-gray-500 font-bold mb-[1cqh] flex items-center gap-[0.5cqw] text-[2cqh]"><i data-lucide="target" class="w-[2.5cqh] h-auto text-orange-400"></i> 獲得分數</div>
+                                    <div id="result-score-val" class="text-[6cqh] font-black text-orange-500"></div>
                                 </div>
-                                <div class="bg-white p-[clamp(1.2rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-md flex flex-col items-center min-w-[20vw]">
-                                    <div class="text-gray-500 font-bold mb-[1vh] flex items-center gap-[0.5vw] text-[clamp(1rem,2.5vh,1.5rem)]"><i data-lucide="swords" class="w-[clamp(1.2rem,3vh,1.8rem)] h-auto text-green-500"></i> 擊敗怪獸</div>
-                                    <div id="result-kill-val" class="text-[clamp(2.5rem,6vh,4.5rem)] font-black text-green-600"></div>
+                                <div class="bg-white p-[3cqh] rounded-[2cqh] border-[0.6cqh] border-white shadow-md flex flex-col items-center min-w-[20cqw]">
+                                    <div class="text-gray-500 font-bold mb-[1cqh] flex items-center gap-[0.5cqw] text-[2cqh]"><i data-lucide="swords" class="w-[2.5cqh] h-auto text-green-500"></i> 擊敗怪獸</div>
+                                    <div id="result-kill-val" class="text-[6cqh] font-black text-green-600"></div>
                                 </div>
                             </div>
                         </div>
-                        <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-[clamp(1.5rem,3.5vh,2.5rem)] py-[clamp(1.2rem,2.5vh,2rem)] rounded-[clamp(1.5rem,4vh,3rem)] flex items-center justify-center gap-[1vw] hover:from-blue-600 hover:to-blue-800">
-                            <i data-lucide="refresh-ccw" class="w-[clamp(2rem,4.5vh,3.5rem)] h-auto"></i> 再玩一次
+                        <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-[3.5cqh] py-[2.5cqh] rounded-[3cqh] flex items-center justify-center gap-[1cqw] hover:from-blue-600 hover:to-blue-800">
+                            <i data-lucide="refresh-ccw" class="w-[4cqh] h-auto"></i> 再玩一次
                         </button>
                     </div>
                 </div>
 
                 <!-- Confirm Modal -->
-                <div id="modal-confirm" class="hidden-view fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-[4vh]">
-                    <div class="bg-white p-[5vh] rounded-[3vh] shadow-2xl border-[clamp(6px,1vh,12px)] border-red-300 max-w-lg w-full text-center transform animate-zoom-in">
-                        <div class="w-[12vh] h-[12vh] bg-red-100 rounded-full flex items-center justify-center border-[clamp(4px,0.5vh,8px)] border-red-400 mx-auto mb-[3vh]">
-                            <i data-lucide="alert-triangle" class="w-[6vh] h-[6vh] text-red-500 animate-pulse"></i>
+                <div id="modal-confirm" class="hidden-view fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-[4cqh]">
+                    <div class="bg-white p-[5cqh] rounded-[3cqh] shadow-2xl border-[1cqh] border-red-300 w-[60cqw] max-w-[800px] text-center transform animate-zoom-in">
+                        <div class="w-[12cqh] h-[12cqh] bg-red-100 rounded-full flex items-center justify-center border-[0.8cqh] border-red-400 mx-auto mb-[3cqh]">
+                            <i data-lucide="alert-triangle" class="w-[6cqh] h-[6cqh] text-red-500 animate-pulse"></i>
                         </div>
-                        <h3 class="text-[clamp(1.8rem,4vh,2.5rem)] font-black text-gray-800 mb-[2vh]">確定要重新開始？</h3>
-                        <p class="text-gray-600 font-bold text-[clamp(1.2rem,2.5vh,1.5rem)] mb-[4vh] bg-gray-50 py-[2vh] rounded-[2vh] border-2 border-gray-200">目前的闖關紀錄將會全部消失喔！</p>
-                        <div class="flex gap-[2vw] justify-center">
-                            <button onclick="confirmRestart(false)" class="grid-btn flex-1 bg-gray-200 text-gray-700 font-black text-[clamp(1.2rem,3vh,1.8rem)] py-[2.5vh] rounded-[2vh] border-[clamp(2px,0.5vh,4px)] border-gray-300 hover:bg-gray-300">取消</button>
-                            <button onclick="confirmRestart(true)" class="grid-btn flex-1 bg-red-500 text-white font-black text-[clamp(1.2rem,3vh,1.8rem)] py-[2.5vh] rounded-[2vh] border-[clamp(2px,0.5vh,4px)] border-red-600 hover:bg-red-600">確定重置</button>
+                        <h3 class="text-[4cqh] font-black text-gray-800 mb-[2cqh]">確定要重新開始？</h3>
+                        <p class="text-gray-600 font-bold text-[2.5cqh] mb-[4cqh] bg-gray-50 py-[2cqh] rounded-[2cqh] border-[0.4cqh] border-gray-200">目前的闖關紀錄將會全部消失喔！</p>
+                        <div class="flex gap-[2cqw] justify-center">
+                            <button onclick="confirmRestart(false)" class="grid-btn flex-1 bg-gray-200 text-gray-700 font-black text-[3cqh] py-[2.5cqh] rounded-[2cqh] border-[0.4cqh] border-gray-300 hover:bg-gray-300">取消</button>
+                            <button onclick="confirmRestart(true)" class="grid-btn flex-1 bg-red-500 text-white font-black text-[3cqh] py-[2.5cqh] rounded-[2cqh] border-[0.4cqh] border-red-600 hover:bg-red-600">確定重置</button>
                         </div>
                     </div>
                 </div>
@@ -351,15 +360,13 @@
                 resultKillVal: document.getElementById('result-kill-val'),
             };
 
-            // 預先產生好九宮格按鈕
             dom.gridContainer.innerHTML = Array(9).fill(0).map((_, i) => `
-                <button id="grid-btn-${i}" onclick="selectQuestion(${i})" class="grid-btn relative w-full h-full aspect-square rounded-[clamp(1rem,3vh,2rem)] flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-white/60 overflow-hidden group ${gridColors[i]}">
+                <button id="grid-btn-${i}" onclick="selectQuestion(${i})" class="grid-btn relative w-full h-full aspect-square rounded-[2cqh] flex items-center justify-center border-[0.6cqh] border-white/60 overflow-hidden group ${gridColors[i]}">
                     <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <span class="text-[clamp(3rem,8vh,6rem)] font-black drop-shadow-lg">${i + 1}</span>
+                    <span class="text-[8cqh] font-black drop-shadow-lg">${i + 1}</span>
                 </button>
             `).join('');
             
-            // 初次初始化所有靜態圖示
             lucide.createIcons();
         }
 
@@ -390,7 +397,7 @@
                 let isDone = status !== null;
                 let btn = document.getElementById(`grid-btn-${i}`);
                 
-                btn.className = `grid-btn relative w-full h-full aspect-square rounded-[clamp(1rem,3vh,2rem)] flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-white/60 overflow-hidden group ${isDone ? 'bg-gray-200 text-gray-400 disabled' : gridColors[i]}`;
+                btn.className = `grid-btn relative w-full h-full aspect-square rounded-[2cqh] flex items-center justify-center border-[0.6cqh] border-white/60 overflow-hidden group ${isDone ? 'bg-gray-200 text-gray-400 disabled' : gridColors[i]}`;
                 
                 if (isDone) {
                     btn.onclick = null;
@@ -401,7 +408,7 @@
                     }
                 } else {
                     btn.onclick = () => selectQuestion(i);
-                    btn.innerHTML = `<div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div><span class="text-[clamp(3rem,8vh,6rem)] font-black drop-shadow-lg">${i + 1}</span>`;
+                    btn.innerHTML = `<div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div><span class="text-[8cqh] font-black drop-shadow-lg">${i + 1}</span>`;
                 }
             }
             lucide.createIcons();
@@ -424,9 +431,9 @@
                     ? 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400 grid-btn cursor-pointer' 
                     : (idx === q.correctAnswer ? 'bg-green-100 border-green-500 text-green-800 shadow-inner' : 'bg-gray-100 border-gray-200 text-gray-400');
                 return `
-                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-[clamp(0.8rem,2.2vh,1.5rem)] rounded-[clamp(1rem,3vh,2rem)] font-black text-[clamp(1rem,2.8vh,1.5rem)] border-[clamp(3px,0.5vh,6px)] relative flex justify-between items-center ${btnStateClass}">
+                <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-[2cqh] rounded-[2cqh] font-black text-[3cqh] border-[0.6cqh] relative flex justify-between items-center ${btnStateClass}">
                     <span class="zhuyin-text flex-1 pr-2">${opt}</span>
-                    ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto opacity-30 flex-shrink-0 ml-1"></i>` : ''}
+                    ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-[4cqh] h-auto opacity-30 flex-shrink-0 ml-1"></i>` : ''}
                 </button>
                 `;
             }).join('');
@@ -434,23 +441,23 @@
             if (feedback) {
                 dom.playFeedback.classList.remove('hidden-view');
                 dom.playFeedback.innerHTML = `
-                    <div class="bg-white w-[80%] max-w-2xl h-[85vh] rounded-[clamp(2rem,5vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] shadow-2xl flex flex-col items-center justify-evenly text-center transform animate-zoom-in border-[clamp(6px,1vh,12px)] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
+                    <div class="bg-white w-[80cqw] max-w-[1000px] h-[85cqh] rounded-[4cqh] p-[4cqh] shadow-2xl flex flex-col items-center justify-evenly text-center transform animate-zoom-in border-[1cqh] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
                         ${feedback.isCorrect ? `
-                            <div class="w-[clamp(4rem,10vh,6rem)] h-[clamp(4rem,10vh,6rem)] bg-green-100 rounded-full flex flex-shrink-0 items-center justify-center border-[clamp(3px,0.5vh,6px)] border-green-400 animate-bounce">
+                            <div class="w-[10cqh] h-[10cqh] bg-green-100 rounded-full flex flex-shrink-0 items-center justify-center border-[0.6cqh] border-green-400 animate-bounce">
                                 <i data-lucide="check-circle" class="w-[50%] h-[50%] text-green-500"></i>
                             </div>
-                            <h3 class="text-[clamp(2rem,5vh,3rem)] font-black text-green-600 flex-shrink-0">攻擊成功！</h3>
+                            <h3 class="text-[5cqh] font-black text-green-600 flex-shrink-0">攻擊成功！</h3>
                         ` : `
-                            <div class="w-[clamp(4rem,10vh,6rem)] h-[clamp(4rem,10vh,6rem)] bg-red-100 rounded-full flex flex-shrink-0 items-center justify-center border-[clamp(3px,0.5vh,6px)] border-red-400">
+                            <div class="w-[10cqh] h-[10cqh] bg-red-100 rounded-full flex flex-shrink-0 items-center justify-center border-[0.6cqh] border-red-400">
                                 <i data-lucide="x-circle" class="w-[50%] h-[50%] text-red-500"></i>
                             </div>
-                            <h3 class="text-[clamp(2rem,5vh,3rem)] font-black text-red-600 flex-shrink-0">哎呀！打歪了</h3>
+                            <h3 class="text-[5cqh] font-black text-red-600 flex-shrink-0">哎呀！打歪了</h3>
                         `}
-                        <div class="w-full bg-gray-50 p-[clamp(1rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(2px,0.5vh,4px)] border-gray-200 text-left flex-shrink-0">
-                            <p class="text-gray-700 font-bold text-[clamp(1.2rem,3vh,1.8rem)] leading-relaxed zhuyin-text">${q.pExplanation}</p>
+                        <div class="w-full bg-gray-50 p-[3cqh] rounded-[2cqh] border-[0.4cqh] border-gray-200 text-left flex-shrink-0">
+                            <p class="text-gray-700 font-bold text-[3cqh] leading-relaxed zhuyin-text">${q.pExplanation}</p>
                         </div>
-                        <button onclick="handleNext()" class="grid-btn w-full py-[clamp(1.2rem,3vh,2rem)] rounded-full font-black text-[clamp(1.5rem,3.5vh,2rem)] text-white shadow-lg flex items-center justify-center gap-[1vw] ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer flex-shrink-0">
-                            返回九宮格 <i data-lucide="arrow-right-circle" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto"></i>
+                        <button onclick="handleNext()" class="grid-btn w-full py-[2cqh] rounded-full font-black text-[3.5cqh] text-white shadow-lg flex items-center justify-center gap-[1cqw] ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer flex-shrink-0">
+                            返回九宮格 <i data-lucide="arrow-right-circle" class="w-[4cqh] h-auto"></i>
                         </button>
                     </div>
                 `;
@@ -470,36 +477,36 @@
                          (score >= 6 ? "bg-gradient-to-b from-blue-50 to-cyan-100 border-blue-300" : "bg-gradient-to-b from-gray-50 to-gray-200 border-gray-300");
             
             let starCount = score === 9 ? 3 : (score >= 6 ? 2 : 1);
-            let starsHtml = '<div class="flex justify-center items-end gap-[1vw] mb-[2vh]">';
+            let starsHtml = '<div class="flex justify-center items-end gap-[1cqw] mb-[2cqh]">';
             for(let i=0; i<3; i++) {
-                let sizeClass = (i === 1) ? 'w-[clamp(4rem,10vh,6rem)] h-auto mb-[2vh]' : 'w-[clamp(3rem,8vh,4.5rem)] h-auto';
+                let sizeClass = (i === 1) ? 'w-[10cqh] h-auto mb-[2cqh]' : 'w-[7cqh] h-auto';
                 let colorClass = i < starCount ? 'text-yellow-400' : 'text-gray-300 opacity-50';
                 let fillStyle = i < starCount ? 'fill: currentColor' : 'fill: none';
                 starsHtml += `<i data-lucide="star" class="${sizeClass} ${colorClass} drop-shadow-md animate-bounce-slow" style="animation-delay: ${i*0.2}s; ${fillStyle}"></i>`;
             }
             starsHtml += '</div>';
 
-            dom.resultBadge.className = `flex-shrink-0 w-[40%] h-full rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] flex flex-col items-center justify-evenly border-[clamp(6px,1vh,12px)] relative shadow-inner ${badgeBg}`;
+            dom.resultBadge.className = `flex-shrink-0 w-[40cqw] h-full rounded-[4cqh] p-[4cqh] flex flex-col items-center justify-evenly border-[1cqh] relative shadow-inner ${badgeBg}`;
             dom.resultBadge.innerHTML = `
-                <i data-lucide="sparkles" class="absolute top-[10%] left-[10%] w-[clamp(2rem,5vh,3rem)] h-auto text-yellow-400 animate-pulse opacity-80"></i>
-                <i data-lucide="sparkles" class="absolute bottom-[15%] right-[10%] w-[clamp(2.5rem,6vh,4rem)] h-auto text-yellow-500 animate-pulse opacity-80"></i>
+                <i data-lucide="sparkles" class="absolute top-[10%] left-[10%] w-[5cqh] h-auto text-yellow-400 animate-pulse opacity-80"></i>
+                <i data-lucide="sparkles" class="absolute bottom-[15%] right-[10%] w-[6cqh] h-auto text-yellow-500 animate-pulse opacity-80"></i>
                 ${starsHtml}
-                <div class="relative animate-float my-[1vh]">
-                    <i data-lucide="award" class="w-[clamp(150px,35vh,250px)] h-auto ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
-                    <i data-lucide="award" class="absolute inset-0 w-[clamp(150px,35vh,250px)] h-auto ${badgeColor}"></i>
+                <div class="relative animate-float my-[1cqh]">
+                    <i data-lucide="award" class="w-[30cqh] h-auto ${badgeColor} drop-shadow-[0_1.5cqh_2cqh_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
+                    <i data-lucide="award" class="absolute inset-0 w-[30cqh] h-auto ${badgeColor}"></i>
                     <div class="absolute inset-0 flex items-center justify-center flex-col pt-[15%]">
-                        <span class="text-white font-black text-[clamp(2.5rem,6vh,4.5rem)] drop-shadow-md">${score * 100}</span>
+                        <span class="text-white font-black text-[6cqh] drop-shadow-md">${score * 100}</span>
                     </div>
                 </div>
-                <div class="bg-white/90 px-[2vw] py-[1.5vh] rounded-[clamp(1.5rem,3vh,2.5rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-lg z-10 w-[95%] text-center relative mt-[2vh]">
-                    <div class="absolute -top-[1.5vh] left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-[clamp(0.8rem,2vh,1.2rem)] font-bold px-[1vw] py-[0.5vh] rounded-full whitespace-nowrap">最終稱號</div>
-                    <h2 class="text-[clamp(1.8rem,4vh,2.8rem)] font-black text-gray-800 drop-shadow-sm tracking-wide mt-[1vh]">${title}</h2>
+                <div class="bg-white/90 px-[2cqw] py-[1.5cqh] rounded-[3cqh] border-[0.6cqh] border-white shadow-lg z-10 w-[95%] text-center relative mt-[2cqh]">
+                    <div class="absolute -top-[2cqh] left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-[2cqh] font-bold px-[2cqw] py-[0.5cqh] rounded-full whitespace-nowrap">最終稱號</div>
+                    <h2 class="text-[4cqh] font-black text-gray-800 drop-shadow-sm tracking-wide mt-[1cqh]">${title}</h2>
                 </div>
             `;
 
             dom.resultScoreVal.textContent = score * 100;
             dom.resultMessage.textContent = message;
-            dom.resultKillVal.innerHTML = `${score}<span class="text-[clamp(1.5rem,4vh,3rem)] text-gray-300 ml-1">/9</span>`;
+            dom.resultKillVal.innerHTML = `${score}<span class="text-[4cqh] text-gray-300 ml-1">/9</span>`;
             
             lucide.createIcons();
         }
