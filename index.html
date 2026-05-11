@@ -2,27 +2,24 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 加入 viewport-fit=cover 與 user-scalable=no 雙重鎖死縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- ==================================================
-         Web App 全螢幕模式標籤 (支援「加到主畫面」功能)
-         ================================================== -->
-    <meta name="mobile-web-app-capable" content="yes"> <!-- 針對 Android Chrome -->
-    <meta name="apple-mobile-web-app-capable" content="yes"> <!-- 針對 iOS Safari -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> <!-- 隱藏/透明化系統狀態列 -->
-    <meta name="apple-mobile-web-app-title" content="環保小尖兵"> <!-- 加入主畫面時的預設 App 名稱 -->
-    <meta name="theme-color" content="#EFF6FF"> <!-- 設定系統狀態列底色，對應 Tailwind 的 blue-50 -->
+    <!-- Web App 全螢幕模式標籤 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="環保小尖兵">
+    <meta name="theme-color" content="#EFF6FF">
     
     <title>環保小尖兵-平板九宮格闖關</title>
 
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Lucide 圖示庫 -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* 橫向模式鎖定提示 */
+        /* 用於徹底強制隱藏畫面的工具類 */
+        .hidden-view { display: none !important; }
+
         @media screen and (orientation: portrait) {
             .portrait-warning { display: flex; }
             #app { display: none; }
@@ -32,93 +29,63 @@
             #app { display: block; }
         }
 
-        /* 擴充動畫特效 (加入 translate3d 強制開啟舊機型 GPU 硬體加速，防抖動) */
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes zoom-in { from { opacity: 0; transform: scale3d(0.8, 0.8, 1); } to { opacity: 1; transform: scale3d(1, 1, 1); } }
         @keyframes slide-up { from { opacity: 0; transform: translate3d(0, 4vh, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
         @keyframes bounce-slow { 0%, 100% { transform: translate3d(0, -5%, 0); } 50% { transform: translate3d(0, 5%, 0); } }
         @keyframes float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -10px, 0); } }
         
-        /* 加入 will-change 提示瀏覽器提前準備硬體資源 */
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; will-change: opacity; opacity: 0; }
         .animate-zoom-in { animation: zoom-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; will-change: transform, opacity; opacity: 0; }
         .animate-slide-up { animation: slide-up 0.4s ease-out forwards; will-change: transform, opacity; opacity: 0; }
         .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; will-change: transform; }
         .animate-float { animation: float 4s ease-in-out infinite; will-change: transform; }
         
-        /* ==================================================
-           終極防護：徹底封印網頁原生滑動、放大與選取行為
-           ================================================== 
-        */
         html, body {
-            -webkit-text-size-adjust: 100%; /* 防 Safari 橫向重整自動放大字體 */
+            -webkit-text-size-adjust: 100%;
             text-size-adjust: 100%;
-            -webkit-user-select: none; /* 防長按文字反白選取 */
+            -webkit-user-select: none;
             user-select: none;
-            -webkit-touch-callout: none; /* 防長按跳出系統選單 */
+            -webkit-touch-callout: none;
             overflow: hidden; 
             overscroll-behavior: none; 
             touch-action: none; 
         }
-        * { 
-            touch-action: none; /* 全域封鎖手勢，防止 iOS 誤判 */
-        }
-        /* 釋放按鈕的點擊權限，但維持無延遲防護 */
+        * { touch-action: none; }
         button, a, .grid-btn { 
             touch-action: manipulation; 
             outline: none !important;
-            -webkit-tap-highlight-color: transparent; /* 消除點擊時的預設灰底 */
+            -webkit-tap-highlight-color: transparent;
         }
         
-        /* 九宮格與按鈕立體感 (修復縮水問題與 3D 渲染) */
         .grid-btn {
             box-shadow: 0 clamp(4px, 1vh, 8px) 0 rgba(0,0,0,0.15);
             transition: all 0.1s;
             will-change: transform, box-shadow;
         }
-        /* 只有未被 disabled 的按鈕點擊時才會下壓 */
         .grid-btn:active:not(.disabled) {
             transform: translate3d(0, clamp(4px, 1vh, 8px), 0) !important;
             box-shadow: 0 0 0 rgba(0,0,0,0.15) !important;
         }
-        /* 徹底修復縮水：移除 translateY 改用 inset 陰影營造凹陷感 */
         .grid-btn.disabled {
             box-shadow: inset 0 clamp(3px, 1vh, 6px) rgba(0,0,0,0.1) !important;
             transform: translate3d(0, 0, 0) !important;
             cursor: not-allowed;
         }
 
-        /* ==================================================
-           全新開發：標準台灣直列注音排版系統 (Flexbox 奈米切割實作)
-           ================================================== */
-        .z-word {
-            display: inline-flex;
-            align-items: center; 
-            margin: 0 1px clamp(2px, 0.5vh, 4px) 1px; 
-            vertical-align: middle;
-        }
+        .z-word { display: inline-flex; align-items: center; margin: 0 1px clamp(2px, 0.5vh, 4px) 1px; vertical-align: middle; }
         .z-base { line-height: 1; }
-        .z-ruby {
-            display: inline-flex;
-            flex-direction: row;
-            font-size: 0.45em; 
-            font-weight: 800;
-            color: #4B5563; 
-            margin-left: 2px;
-        }
+        .z-ruby { display: inline-flex; flex-direction: row; font-size: 0.45em; font-weight: 800; color: #4B5563; margin-left: 2px; }
         .z-symbols { display: flex; flex-direction: column; justify-content: center; }
         .z-sym { line-height: 1.05; text-align: center; }
         .z-sym.light-tone { margin-bottom: 2px; font-size: 1.2em; }
         .z-tone { display: flex; flex-direction: column; justify-content: center; margin-left: 1px; }
-        .zhuyin-text {
-            line-height: 1.8 !important; 
-            word-break: break-all;     
-        }
+        .zhuyin-text { line-height: 1.8 !important; word-break: break-all; }
     </style>
 </head>
 <body class="bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blue-50 font-sans text-gray-800 h-[100vh] w-[100vw] overflow-hidden flex items-center justify-center">
 
-    <!-- 載入保護幕：防止重整時大字體瞬間閃現導致 Safari 強制放大 -->
+    <!-- 載入保護幕 -->
     <div id="loading-screen" class="fixed inset-0 z-[999] bg-blue-50 flex flex-col items-center justify-center transition-opacity duration-500">
         <i data-lucide="loader-2" class="w-[10vh] h-[10vh] text-blue-500 animate-spin mb-[2vh]"></i>
         <h2 class="text-[clamp(1.5rem,3vh,2.5rem)] font-black text-blue-800 tracking-widest">系統初始化中...</h2>
@@ -127,8 +94,8 @@
     <!-- 直式螢幕警告 -->
     <div class="portrait-warning fixed inset-0 z-[900] bg-blue-600 text-white flex-col items-center justify-center p-[4vh] text-center">
         <i data-lucide="rotate-ccw" class="w-[20vh] h-[20vh] mb-[4vh] animate-spin-slow"></i>
-        <h1 class="text-[clamp(2rem,6vh,4rem)] font-black mb-[2vh]">請將平板轉為橫向使用</h1>
-        <p class="text-[clamp(1.2rem,3vh,2rem)]">此遊戲專為橫向螢幕設計，以獲得最佳體驗！</p>
+        <h1 class="text-[clamp(2rem,6vh,4rem)] font-black mb-[2vh]">請將螢幕轉為橫向</h1>
+        <p class="text-[clamp(1.2rem,3vh,2rem)]">此遊戲專為橫向寬螢幕設計，以獲得最佳體驗！</p>
     </div>
 
     <!-- 背景裝飾 -->
@@ -139,22 +106,12 @@
         <div class="absolute top-[60%] right-[15%] w-[15vw] h-[8vh] bg-white/60 rounded-full blur-sm animate-[pulse_7s_ease-in-out_infinite]"></div>
     </div>
 
-    <!-- 遊戲主要滿版容器 (100vh) -->
-    <div id="app" class="relative z-10 w-full h-[100vh] max-w-[1350px] mx-auto p-[2vh] md:p-[3vh] lg:p-[4vh] flex items-center justify-center overflow-hidden"></div>
+    <!-- 遊戲主要滿版容器：徹底移除 max-w，讓版面 100% 貼合視窗大小，避免比例跑位 -->
+    <div id="app" class="relative z-10 w-full h-full p-[2vh] md:p-[3vh] lg:p-[4vh] overflow-hidden">
+        <!-- 內容由 JS 初始化生成，達到 DOM 重用優化 -->
+    </div>
 
     <script>
-        // --- 處理載入保護幕 (延遲 300ms 等排版完畢才顯示) ---
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const loader = document.getElementById('loading-screen');
-                if(loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => loader.remove(), 500);
-                }
-            }, 300);
-        });
-
-        // --- 徹底物理防護雙指縮放與滾動 ---
         document.addEventListener('touchmove', function(event) { event.preventDefault(); }, { passive: false });
         document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) { event.preventDefault(); } }, { passive: false });
         let lastTouchEnd = 0;
@@ -164,7 +121,6 @@
             lastTouchEnd = now;
         }, { passive: false });
 
-        // --- 實體化立體怪獸設計 (替換了危險怪為碎裂炸彈怪) ---
         const monsters = {
             cigarette: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[20vh] h-[35vh] max-w-[100px] max-h-[160px] bg-gradient-to-b from-white from-50% to-orange-400 to-50% rounded-full border-[clamp(4px,1vh,8px)] border-gray-400 shadow-[10px_10px_0_rgba(0,0,0,0.15)] flex flex-col items-center justify-between py-[10%] relative animate-float"><div class="flex gap-[1vh] mt-[5%]"><div class="w-[1.5vh] h-[1.5vh] bg-gray-800 rounded-full"></div><div class="w-[1.5vh] h-[1.5vh] bg-gray-800 rounded-full"></div></div><div class="w-[4vh] h-[1vh] bg-gray-800 rounded-full mb-[15%]"></div><i data-lucide="wind" class="w-[60%] h-auto text-gray-400 absolute -top-[30%] animate-pulse"></i></div></div>`,
             plastic: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-amber-300 to-orange-500 rounded-[20%] border-[clamp(4px,1vh,8px)] border-amber-700 shadow-[12px_12px_0_rgba(180,83,9,0.25)] flex items-center justify-center relative transform rotate-12 animate-float"><div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-30"></div><i data-lucide="skull" class="w-[50%] h-[50%] text-amber-900 z-10 drop-shadow-md"></i></div></div>`,
@@ -172,100 +128,22 @@
             ticket: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[28vh] h-[35vh] max-w-[130px] max-h-[160px] bg-gradient-to-b from-yellow-100 to-yellow-300 border-[clamp(4px,1vh,8px)] border-yellow-600 shadow-[10px_10px_0_rgba(202,138,4,0.3)] flex flex-col items-center justify-between py-[8%] relative animate-float rounded-xl"><div class="w-[50%] h-[8%] bg-yellow-600 rounded-full"></div><div class="flex gap-[1vh]"><div class="w-[2vh] h-[2vh] bg-red-500 border-[clamp(2px,0.5vh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div><div class="w-[2vh] h-[2vh] bg-red-500 border-[clamp(2px,0.5vh,4px)] border-red-700 rounded-full flex items-center justify-center"><div class="w-[20%] h-[20%] bg-white rounded-full"></div></div></div><i data-lucide="receipt" class="w-[50%] h-[50%] text-yellow-700 drop-shadow-md"></i><div class="text-[clamp(1.5rem,4vh,2rem)] font-black text-yellow-800">$</div></div></div>`,
             block: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-br from-purple-500 to-indigo-700 rounded-2xl border-[clamp(4px,1vh,8px)] border-indigo-900 shadow-[12px_12px_0_rgba(49,46,129,0.4)] flex flex-col items-center justify-center relative transform -rotate-6 animate-float"><div class="flex gap-[1vh] absolute top-[15%]"><div class="w-[20%] h-[10%] bg-indigo-900 transform rotate-12"></div><div class="w-[20%] h-[10%] bg-indigo-900 transform -rotate-12"></div></div><div class="flex gap-[1.5vh] mt-[15%]"><div class="w-[1.5vh] h-[1.5vh] bg-white rounded-full"></div><div class="w-[1.5vh] h-[1.5vh] bg-white rounded-full"></div></div><i data-lucide="ban" class="w-[45%] h-[45%] text-pink-400 mt-[5%] drop-shadow-md"></i></div></div>`,
             water: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1vh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(29,78,216,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%;"><div class="flex gap-[1.5vh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] aspect-square bg-blue-900 rounded-full"></div></div></div><div class="w-[30%] h-[10%] border-b-[clamp(2px,0.5vh,4px)] border-blue-900 rounded-full"></div><i data-lucide="droplets" class="absolute -top-[15%] w-[35%] h-[35%] text-cyan-200 drop-shadow-md animate-pulse"></i></div></div>`,
-            
-            // 全新：碎裂炸彈怪
-            danger: `<div class="relative w-full h-full flex items-center justify-center">
-                <div class="flex flex-col items-center animate-float scale-110">
-                    <div class="w-[3vh] h-[4vh] bg-gray-800 rounded-t-md relative z-0 mb-[-1vh]"></div>
-                    <div class="w-[28vh] h-[28vh] max-w-[140px] max-h-[140px] bg-gradient-to-br from-gray-600 to-red-900 rounded-full border-[clamp(4px,1vh,8px)] border-gray-900 shadow-[10px_10px_0_rgba(0,0,0,0.4)] flex flex-col items-center justify-center relative z-10">
-                        <div class="flex gap-[2vh] mb-[5%] mt-[5%]">
-                            <i data-lucide="x" class="w-[4vh] h-[4vh] text-yellow-400 font-black drop-shadow-md"></i>
-                            <i data-lucide="x" class="w-[4vh] h-[4vh] text-yellow-400 font-black drop-shadow-md"></i>
-                        </div>
-                        <i data-lucide="zap" class="w-[10vh] h-[10vh] text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)] fill-yellow-300 animate-pulse"></i>
-                    </div>
-                </div>
-            </div>`,
-            
+            danger: `<div class="relative w-full h-full flex items-center justify-center"><div class="flex flex-col items-center animate-float scale-110"><div class="w-[3vh] h-[4vh] bg-gray-800 rounded-t-md relative z-0 mb-[-1vh]"></div><div class="w-[28vh] h-[28vh] max-w-[140px] max-h-[140px] bg-gradient-to-br from-gray-600 to-red-900 rounded-full border-[clamp(4px,1vh,8px)] border-gray-900 shadow-[10px_10px_0_rgba(0,0,0,0.4)] flex flex-col items-center justify-center relative z-10"><div class="flex gap-[2vh] mb-[5%] mt-[5%]"><i data-lucide="x" class="w-[4vh] h-[4vh] text-yellow-400 font-black drop-shadow-md"></i><i data-lucide="x" class="w-[4vh] h-[4vh] text-yellow-400 font-black drop-shadow-md"></i></div><i data-lucide="zap" class="w-[10vh] h-[10vh] text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)] fill-yellow-300 animate-pulse"></i></div></div></div>`,
             stinky: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[35vh] h-[30vh] max-w-[160px] max-h-[144px] bg-gradient-to-br from-lime-400 to-green-600 border-[clamp(4px,1vh,8px)] border-green-800 shadow-[12px_12px_0_rgba(21,128,61,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 60% 40% 70% / 60% 50% 70% 40%;"><div class="flex gap-[2vh] mb-[5%]"><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div><div class="w-[20%] aspect-square bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-green-800 shadow-inner"><div class="w-[30%] aspect-square bg-black rounded-full"></div></div></div><i data-lucide="wind" class="w-[30%] h-[30%] text-green-900 opacity-60 absolute -top-[20%]"></i><div class="w-[25%] h-[20%] border-b-[clamp(2px,0.5vh,4px)] border-green-900 rounded-full mt-[5%]"></div></div></div>`,
             slip: `<div class="relative w-full h-full flex items-center justify-center"><div class="w-[30vh] h-[30vh] max-w-[144px] max-h-[144px] bg-gradient-to-b from-cyan-300 to-blue-500 border-[clamp(4px,1vh,8px)] border-blue-700 shadow-[10px_10px_0_rgba(30,58,138,0.3)] flex flex-col items-center justify-center relative animate-float" style="border-radius: 50% 50% 50% 10%;"><div class="flex gap-[1.5vh] mb-[10%]"><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div><div class="w-[20%] h-[30%] bg-white rounded-full flex items-center justify-center border-[clamp(2px,0.5vh,4px)] border-blue-800 shadow-inner"><div class="w-[30%] h-[40%] bg-black rounded-full mb-[5%]"></div></div></div><div class="w-[35%] h-[25%] border-t-[clamp(4px,1vh,6px)] border-blue-800 rounded-full mt-[5%]"></div><div class="absolute -right-[10%] top-[10%] w-[20%] h-[20%] bg-cyan-200 rounded-full border-[clamp(2px,0.5vh,3px)] border-cyan-500"></div><div class="absolute -left-[15%] bottom-[10%] w-[25%] h-[25%] bg-blue-300 rounded-full border-[clamp(2px,0.5vh,3px)] border-blue-600"></div></div></div>`
         };
 
-        // --- 全新注音版官方題庫 ---
         const questions = [
-            {
-                villain: '菸蒂怪', villainIcon: monsters.cigarette,
-                scenario: "😱 哎{ㄞ}呀{ㄧㄚ}！長{ㄓㄤˇ}著{ㄓㄜ˙}腳{ㄐㄧㄠˇ}的{ㄉㄜ˙}【菸{ㄧㄢ}蒂{ㄉㄧˋ}怪{ㄍㄨㄞˋ}】正{ㄓㄥˋ}準{ㄓㄨㄣˇ}備{ㄅㄟˋ}跳{ㄊㄧㄠˋ}進{ㄐㄧㄣˋ}水{ㄕㄨㄟˇ}溝{ㄍㄡ}裡{ㄌㄧˇ}！",
-                question: "請{ㄑㄧㄥˇ}問{ㄨㄣˋ}亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}到{ㄉㄠˋ}水{ㄕㄨㄟˇ}溝{ㄍㄡ}，最{ㄗㄨㄟˋ}後{ㄏㄡˋ}會{ㄏㄨㄟˋ}順{ㄕㄨㄣˋ}著{ㄓㄜ˙}水{ㄕㄨㄟˇ}流{ㄌㄧㄡˊ}，流{ㄌㄧㄡˊ}到{ㄉㄠˋ}哪{ㄋㄚˇ}裡{ㄌㄧˇ}造{ㄗㄠˋ}成{ㄔㄥˊ}生{ㄕㄥ}態{ㄊㄞˋ}污{ㄨ}染{ㄖㄢˇ}呢{ㄋㄜ˙}?",
-                options: ["(A) 美{ㄇㄟˇ}麗{ㄌㄧˋ}的{ㄉㄜ˙}大{ㄉㄚˋ}海{ㄏㄞˇ}裡{ㄌㄧˇ}", "(B) 遙{ㄧㄠˊ}遠{ㄩㄢˇ}的{ㄉㄜ˙}外{ㄨㄞˋ}太{ㄊㄞˋ}空{ㄎㄨㄥ}"], correctAnswer: 0,
-                explanation: "水{ㄕㄨㄟˇ}溝{ㄍㄡ}不{ㄅㄨˊ}是{ㄕˋ}菸{ㄧㄢ}灰{ㄏㄨㄟ}缸{ㄍㄤ}，菸{ㄧㄢ}蒂{ㄉㄧˋ} 會{ㄏㄨㄟˋ}順{ㄕㄨㄣˋ}著{ㄓㄜ˙}溪{ㄒㄧ}流{ㄌㄧㄡˊ}，流{ㄌㄧㄡˊ}進{ㄐㄧㄣˋ}大{ㄉㄚˋ}海{ㄏㄞˇ}，毒{ㄉㄨˊ}害{ㄏㄞˋ}海{ㄏㄞˇ}洋{ㄧㄤˊ}生{ㄕㄥ}物{ㄨˋ}喔{ㄛ}！"
-            },
-            {
-                villain: '塑膠濾嘴怪', villainIcon: monsters.plastic,
-                scenario: "🤔 【塑{ㄙㄨˋ}膠{ㄐㄧㄠ}濾{ㄌㄩˋ}嘴{ㄗㄨㄟˇ}怪{ㄍㄨㄞˋ}】笑{ㄒㄧㄠˋ}著{ㄓㄜ˙}說{ㄕㄨㄛ}：「我{ㄨㄛˇ}是{ㄕˋ}紙{ㄓˇ}做{ㄗㄨㄛˋ}的{ㄉㄜ˙}，很{ㄏㄣˇ}快{ㄎㄨㄞˋ}就{ㄐㄧㄡˋ}爛{ㄌㄢˋ}掉{ㄉㄧㄠˋ}啦{ㄌㄚ}！」",
-                question: "其{ㄑㄧˊ}實{ㄕˊ}菸{ㄧㄢ}蒂{ㄉㄧˋ}的{ㄉㄜ˙}濾{ㄌㄩˋ}嘴{ㄗㄨㄟˇ}是{ㄕˋ}塑{ㄙㄨˋ}膠{ㄐㄧㄠ}做{ㄗㄨㄛˋ}的{ㄉㄜ˙}，請{ㄑㄧㄥˇ}問{ㄨㄣˋ}它{ㄊㄚ}在{ㄗㄞˋ}大{ㄉㄚˋ}自{ㄗˋ}然{ㄖㄢˊ}中{ㄓㄨㄥ}大{ㄉㄚˋ}約{ㄩㄝ}需{ㄒㄩ}要{ㄧㄠˋ}多{ㄉㄨㄛ}久{ㄐㄧㄡˇ}才{ㄘㄞˊ}能{ㄋㄥˊ}分{ㄈㄣ}解{ㄐㄧㄝˇ}？",
-                options: ["(A) 1個{ㄍㄜ˙}禮{ㄌㄧˇ}拜{ㄅㄞˋ}", "(B) 15年{ㄋㄧㄢˊ}以{ㄧˇ}上{ㄕㄤˋ}"], correctAnswer: 1,
-                explanation: "菸{ㄧㄢ}蒂{ㄉㄧˋ}含{ㄏㄢˊ}有{ㄧㄡˇ}毒{ㄉㄨˊ}物{ㄨˋ}質{ㄓˊ}與{ㄩˇ}塑{ㄙㄨˋ}膠{ㄐㄧㄠ}微{ㄨㄟˊ}粒{ㄌㄧˋ}，極{ㄐㄧˊ}難{ㄋㄢˊ}分{ㄈㄣ}解{ㄐㄧㄝˇ}，千{ㄑㄧㄢ}萬{ㄨㄢˋ}別{ㄅㄧㄝˊ}被{ㄅㄟˋ}騙{ㄆㄧㄢˋ}了{ㄌㄜ˙}！"
-            },
-            {
-                villain: '迷路阿伯', villainIcon: monsters.grandpa,
-                scenario: "👴 遇{ㄩˋ}到{ㄉㄠˋ}家{ㄐㄧㄚ}裡{ㄌㄧˇ}的{ㄉㄜ˙}長{ㄓㄤˇ}輩{ㄅㄟˋ}抽{ㄔㄡ}完{ㄨㄢˊ}菸{ㄧㄢ}，不{ㄅㄨˋ}知{ㄓ}道{ㄉㄠˋ}要{ㄧㄠˋ}把{ㄅㄚˇ}菸{ㄧㄢ}蒂{ㄉㄧˋ}丟{ㄉㄧㄡ}哪{ㄋㄚˇ}...",
-                question: "如{ㄖㄨˊ}果{ㄍㄨㄛˇ}看{ㄎㄢˋ}到{ㄉㄠˋ}家{ㄐㄧㄚ}裡{ㄌㄧˇ}的{ㄉㄜ˙}長{ㄓㄤˇ}輩{ㄅㄟˋ}抽{ㄔㄡ}完{ㄨㄢˊ}菸{ㄧㄢ}，我{ㄨㄛˇ}們{ㄇㄣ˙}應{ㄧㄥ}該{ㄍㄞ}提{ㄊㄧˊ}醒{ㄒㄧㄥˇ}他{ㄊㄚ}把{ㄅㄚˇ}菸{ㄧㄢ}蒂{ㄉㄧˋ}丟{ㄉㄧㄡ}在{ㄗㄞˋ}哪{ㄋㄚˇ}裡{ㄌㄧˇ}才{ㄘㄞˊ}是{ㄕˋ}對{ㄉㄨㄟˋ}的{ㄉㄜ˙}？",
-                options: ["(A) 菸{ㄧㄢ}蒂{ㄉㄧˋ}收{ㄕㄡ}集{ㄐㄧˊ}桶{ㄊㄨㄥˇ}", "(B) 水{ㄕㄨㄟˇ}溝{ㄍㄡ}裡{ㄌ一ˇ}"], correctAnswer: 0,
-                explanation: "丟{ㄉㄧㄡ}進{ㄐㄧㄣˋ}專{ㄓㄨㄢ}用{ㄩㄥˋ}的{ㄉㄜ˙}「菸{ㄧㄢ}蒂{ㄉㄧˋ}收{ㄕㄡ}集{ㄐㄧˊ}桶{ㄊㄨㄥˇ}」最{ㄗㄨㄟˋ}安{ㄢ}全{ㄑㄩㄢˊ}！如{ㄖㄨˊ}果{ㄍㄨㄛˇ}只{ㄓˇ}能{ㄋㄥˊ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}，一{ㄧˊ}定{ㄉㄧㄥˋ}要{ㄧㄠˋ}確{ㄑㄩㄝˋ}實{ㄕˊ}熄{ㄒㄧˊ}滅{ㄇㄧㄝˋ}才{ㄘㄞˊ}不{ㄅㄨˊ}會{ㄏㄨㄟˋ}引{ㄧㄣˇ}發{ㄈㄚ}火{ㄏㄨㄛˇ}災{ㄗㄞ}喔{ㄛ}！"
-            },
-            {
-                villain: '罰單怪', villainIcon: monsters.ticket,
-                scenario: "💸 氣{ㄑㄧˋ}噗{ㄆㄨ}噗{ㄆㄨ}的{ㄉㄜ˙}【罰{ㄈㄚˊ}單{ㄉㄢ}怪{ㄍㄨㄞˋ}】出{ㄔㄨ}現{ㄒㄧㄢˋ}了{ㄌㄜ˙}！亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}是{ㄕˋ}不{ㄅㄨˋ}對{ㄉㄨㄟˋ}的{ㄉㄜ˙}行{ㄒㄧㄥˊ}為{ㄨㄟˊ}！",
-                question: "在{ㄗㄞˋ}路{ㄌㄨˋ}上{ㄕㄤˋ}亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}，除{ㄔㄨˊ}了{ㄌㄜˋ}會{ㄏㄨㄟˋ}把{ㄅㄚˇ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}弄{ㄋㄨㄥˋ}髒{ㄗㄤ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}環{ㄏㄨㄢˊ}保{ㄅㄠˇ}局{ㄐㄩˊ}罰{ㄈㄚˊ}多{ㄉㄨㄛ}少{ㄕㄠˇ}錢{ㄑㄧㄢˊ}呢{ㄋㄜ˙}？",
-                options: ["(A) 不{ㄅㄨˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}罰{ㄈㄚˊ}錢{ㄑㄧㄢˊ}，記{ㄐㄧˋ}得{ㄉㄜ˙}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}", "(B) 依{ㄧ}廢{ㄈㄟˋ}棄{ㄑㄧˋ}物{ㄨˋ}清{ㄑㄧㄥ}理{ㄌㄧˇ}法{ㄈㄚˇ}，開{ㄎㄞ}罰{ㄈㄚˊ}1200元{ㄩㄢˊ}到{ㄉㄠˋ}6000元{ㄩㄢˊ}"], correctAnswer: 1,
-                explanation: "亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}不{ㄅㄨˋ}僅{ㄐㄧㄣˇ}破{ㄆㄛˋ}壞{ㄏㄨㄞˋ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}荷{ㄏㄜˊ}包{ㄅㄠ}大{ㄉㄚˋ}失{ㄕ}血{ㄒㄧㄝˇ}！請{ㄑㄧㄥˇ}大{ㄉㄚˋ}家{ㄐㄧㄚ}發{ㄈㄚ}揮{ㄏㄨㄟ}公{ㄍㄨㄥ}德{ㄉㄜˊ}心{ㄒㄧㄣ}喔{ㄛ}！"
-            },
-            {
-                villain: '阻塞怪', villainIcon: monsters.block,
-                scenario: "🚽 方{ㄈㄤ}方{ㄈㄤ}正{ㄓㄥˋ}正{ㄓㄥˋ}的{ㄉㄜ˙}【阻{ㄗㄨˇ}塞{ㄙㄞ}怪{ㄍㄨㄞˋ}】，想{ㄒㄧㄤˇ}跟{ㄍㄣ}著{ㄓㄜ˙}擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}一{ㄧˋ}起{ㄑㄧˇ}衝{ㄔㄨㄥ}進{ㄐㄧㄣˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}裡{ㄌㄧˇ}！",
-                question: "如{ㄖㄨˊ}果{ㄍㄨㄛˇ}公{ㄍㄨㄥ}廁{ㄘㄜˋ}貼{ㄊㄧㄝ}著{ㄓㄜ˙}「衛{ㄨㄟˋ}生{ㄕㄥ}紙{ㄓˇ}丟{ㄉㄧㄡ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」，洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}用{ㄩㄥˋ}的{ㄉㄜ˙}「擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}」也{ㄧㄝˇ}可{ㄎㄜˇ}以{ㄧˇ}跟{ㄍㄣ}著{ㄓㄜ˙}丟{ㄉㄧㄡ}進{ㄐㄧㄣˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}嗎{ㄇㄚ˙}?",
-                options: ["(A) 不{ㄅㄨˋ}可{ㄎㄜˇ}以{ㄧˇ}，會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}塞{ㄙㄞ}住{ㄓㄨˋ}", "(B) 可{ㄎㄜˇ}以{ㄧˇ}，只{ㄓˇ}要{ㄧㄠˋ}是{ㄕˋ}紙{ㄓˇ}類{ㄌㄟˋ}都{ㄉㄡ}行{ㄒㄧㄥˊ}"], correctAnswer: 0,
-                explanation: "擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}為{ㄨㄟˋ}了{ㄌㄜ˙}吸{ㄒㄧ}水{ㄕㄨㄟˇ}，材{ㄘㄞˊ}質{ㄓˊ}比{ㄅㄧˇ}較{ㄐㄧㄠˋ}強{ㄑㄧㄤˊ}韌{ㄖㄣˋ}，沒{ㄇㄟˊ}辦{ㄅㄢˋ}法{ㄈㄚˇ}在{ㄗㄞˋ}水{ㄕㄨㄟˇ}裡{ㄌㄧˇ}快{ㄎㄨㄞˋ}速{ㄙㄨˋ}分{ㄈㄣ}解{ㄐㄧㄝˇ}，一{ㄧˊ}定{ㄉㄧㄥˋ}要{ㄧㄠˋ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}喔{ㄛ}！"
-            },
-            {
-                villain: '省水怪', villainIcon: monsters.water,
-                scenario: "💧 【省{ㄕㄥˇ}水{ㄕㄨㄟˇ}怪{ㄍㄨㄞˋ}】指{ㄓˇ}著{ㄓㄜ˙}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}的{ㄉㄜ˙}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，考{ㄎㄠˇ}驗{ㄧㄢˋ}你{ㄋㄧˇ}的{ㄉㄜ˙}環{ㄏㄨㄢˊ}保{ㄅㄠˇ}知{ㄓ}識{ㄕˋ}！",
-                question: "現{ㄒㄧㄢˋ}在{ㄗㄞˋ}很{ㄏㄣˇ}多{ㄉㄨㄛ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}面{ㄇㄧㄢˋ}有{ㄧㄡˇ}「一{ㄧˊ}大{ㄉㄚˋ}一{ㄧˋ}小{ㄒㄧㄠˇ}」兩{ㄌㄧㄤˇ}個{ㄍㄜ˙}沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，請{ㄑㄧㄥˇ}問{ㄨㄣˋ}「小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}」代{ㄉㄞˋ}表{ㄅㄧㄠˇ}什{ㄕㄜˊ}麼{ㄇㄜ˙}意{ㄧˋ}思{ㄙ}？",
-                options: ["(A) 聲{ㄕㄥ}音{ㄧㄣ}比{ㄅㄧˇ}較{ㄐㄧㄠˋ}小{ㄒㄧㄠˇ}，怕{ㄆㄚˋ}吵{ㄔㄠˇ}的{ㄉㄜ˙}時{ㄕㄡˊ}候{ㄏㄡˋ}按{ㄢˋ}的{ㄉㄜ˙}", "(B) 沖{ㄔㄨㄥ}小{ㄒㄧㄠˇ}便{ㄅㄧㄢˋ}用{ㄩㄥˋ}的{ㄉㄜ˙}，可{ㄎㄜˇ}以{ㄧˇ}節{ㄐㄧㄝˊ}約{ㄩㄝ}用{ㄩㄥˋ}水{ㄕㄨㄟˇ}"], correctAnswer: 1,
-                explanation: "小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}是{ㄕˋ}為{ㄨㄟˋ}了{ㄌㄜ˙}「省{ㄕㄥˇ}水{ㄕㄨㄟˇ}」設{ㄕㄜˋ}計{ㄐㄧˋ}的{ㄉㄜ˙}！上{ㄕㄤˋ}小{ㄒㄧㄠˇ}號{ㄏㄠˋ}時{ㄕˊ}按{ㄢˋ}小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，就{ㄐㄧㄡˋ}能{ㄋㄥˊ}節{ㄐㄧㄝˊ}約{ㄩㄝ}珍{ㄓㄣ}貴{ㄍㄨㄟˋ}的{ㄉㄜ˙}水{ㄕㄨㄟˇ}資{ㄗ}源{ㄩㄢˊ}。"
-            },
-            {
-                villain: '碎裂炸彈怪', villainIcon: monsters.danger,
-                scenario: "🤸 尖{ㄐㄧㄢ}尖{ㄐㄧㄢ}的{ㄉㄜ˙}【碎{ㄙㄨㄟˋ}裂{ㄌㄧㄝˋ}炸{ㄓㄚˋ}彈{ㄉㄢˋ}怪{ㄍㄨㄞˋ}】示{ㄕˋ}範{ㄈㄢˋ}了{ㄌㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}超{ㄔㄠ}可{ㄎㄜˇ}怕{ㄆㄚˋ}的{ㄉㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}：踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}！",
-                question: "看{ㄎㄢˋ}到{ㄉㄠˋ}「坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」時{ㄕˊ}，應{ㄧㄥ}該{ㄍㄞ}怎{ㄗㄣˇ}麼{ㄇㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}才{ㄘㄞˊ}安{ㄢ}全{ㄑㄩㄢˊ}又{ㄧㄡˋ}衛{ㄨㄟˋ}生{ㄕㄥ}？",
-                options: ["(A) 練{ㄌㄧㄢˋ}武{ㄨˇ}功{ㄍㄨㄥ}，雙{ㄕㄨㄤ}腳{ㄐㄧㄠˇ}踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}座{ㄗㄨㄛˋ}上{ㄕㄤˋ}", "(B) 消{ㄒㄧㄠ}毒{ㄉㄨˊ}後{ㄏㄡˋ}，坐{ㄗㄨㄛˋ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}"], correctAnswer: 1,
-                explanation: "蹲{ㄉㄨㄣ}踩{ㄘㄞˇ}在{ㄗㄞˋ}坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}非{ㄈㄟ}常{ㄔㄤˊ}危{ㄨㄟˊ}險{ㄒㄧㄢˇ}，陶{ㄊㄠˊ}瓷{ㄘˊ}破{ㄆㄛˋ}裂{ㄌㄧㄝˋ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}人{ㄖㄣˊ}受{ㄕㄡˋ}重{ㄓㄨㄥˋ}傷{ㄕㄤ}！請{ㄑㄧㄥˇ}務{ㄨˋ}必{ㄅㄧˋ}坐{ㄗㄨㄛˋ}著{ㄓㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}。"
-            },
-            {
-                villain: '臭臭怪', villainIcon: monsters.stinky,
-                scenario: "🤢 上{ㄕㄤˋ}完{ㄨㄢˊ}廁{ㄘㄜˋ}所{ㄙㄨㄛˇ}，【臭{ㄔㄡˋ}臭{ㄔㄡˋ}怪{ㄍㄨㄞˋ}】希{ㄒㄧ}望{ㄨㄤˋ}大{ㄉㄚˋ}家{ㄐㄧㄚ}直{ㄓˊ}接{ㄐㄧㄝ}離{ㄌㄧˊ}開{ㄎㄞ}不{ㄅㄨˋ}要{ㄧㄠˋ}沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}...",
-                question: "為{ㄨㄟˋ}了{ㄌㄜ˙}讓{ㄖㄤˋ}下{ㄒㄧㄚˋ}一{ㄧˊ}個{ㄍㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}者{ㄓㄜˇ}有{ㄧㄡˇ}乾{ㄍㄢ}淨{ㄐㄧㄥˋ}的{ㄉㄜ˙}廁{ㄘㄜˋ}所{ㄙㄨㄛˇ}可{ㄎㄜˇ}以{ㄧˇ}用{ㄩㄥˋ}，離{ㄌㄧˊ}開{ㄎㄞ}前{ㄑㄧㄢˊ}最{ㄗㄨㄟˋ}重{ㄓㄨㄥˋ}要{ㄧㄠˋ}的{ㄉㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}是{ㄕˋ}什{ㄕㄜˊ}麼{ㄇㄜ˙}？",
-                options: ["(A) 沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}", "(B) 什{ㄕㄜˊ}麼{ㄇㄜ˙}都{ㄉㄡ}不{ㄅㄨˋ}做{ㄗㄨㄛˋ}直{ㄓˊ}接{ㄐㄧㄝ}離{ㄌㄧˊ}開{ㄎㄞ}"], correctAnswer: 0,
-                explanation: "隨{ㄙㄨㄟˊ}手{ㄕㄡˇ}沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}是{ㄕˋ}基{ㄐㄧ}本{ㄅㄣˇ}的{ㄉㄜ˙}公{ㄍㄨㄥ}廁{ㄘㄜˋ}禮{ㄌㄧˇ}儀{ㄧˊ}，大{ㄉㄚˋ}家{ㄐㄧㄚ}一{ㄧˋ}起{ㄑㄧˇ}保{ㄅㄠˇ}持{ㄔˊ}乾{ㄍㄢ}淨{ㄐㄧㄥˋ}不{ㄅㄨˊ}發{ㄈㄚ}臭{ㄔㄡˋ}！"
-            },
-            {
-                villain: '滑倒怪', villainIcon: monsters.slip,
-                scenario: "💦 趕{ㄍㄢˇ}時{ㄕˊ}間{ㄐㄧㄢ}的{ㄉㄜ˙}【滑{ㄏㄨㄚˊ}倒{ㄉㄠˇ}怪{ㄍㄨㄞˋ}】，洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}用{ㄩㄥˋ}力{ㄌㄧˋ}把{ㄅㄚˇ}水{ㄕㄨㄟˇ}狂{ㄎㄨㄤˊ}甩{ㄕㄨㄞˇ}在{ㄗㄞˋ}地{ㄉㄧˋ}板{ㄅㄢˇ}上{ㄕㄤˋ}！",
-                question: "為{ㄨㄟˋ}了{ㄌㄜ˙}趕{ㄍㄢˇ}快{ㄎㄨㄞˋ}出{ㄔㄨ}去{ㄑㄩˋ}玩{ㄨㄢˊ}，上{ㄕㄤˋ}完{ㄨㄢˊ}廁{ㄘㄜˋ}所{ㄙㄨㄛˇ}洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}用{ㄩㄥˋ}力{ㄌㄧˋ}把{ㄅㄚˇ}水{ㄕㄨㄟˇ}甩{ㄕㄨㄞˇ}在{ㄗㄞˋ}地{ㄉㄧˋ}板{ㄅㄢˇ}上{ㄕㄤˋ}就{ㄐㄧㄡˋ}好{ㄏㄠˇ}，請{ㄑㄧㄥˇ}問{ㄨㄣˋ}這{ㄓㄜˋ}樣{ㄧㄤˋ}正{ㄓㄥˋ}確{ㄑㄩㄝˋ}嗎{ㄇㄚ˙}?",
-                options: ["(A) 錯{ㄘㄨㄛˋ}誤{ㄨˋ}", "(B) 正{ㄓㄥˋ}確{ㄑㄩㄝˋ}"], correctAnswer: 0,
-                explanation: "地{ㄉㄧˋ}板{ㄅㄢˇ}積{ㄐㄧ}水{ㄕㄨㄟˇ}很{ㄏㄣˇ}容{ㄖㄨㄥˊ}易{ㄧˋ}害{ㄏㄞˋ}別{ㄅㄧㄝˊ}人{ㄖㄣˊ}滑{ㄏㄨㄚˊ}倒{ㄉㄠˇ}受{ㄕㄡˋ}傷{ㄕㄤ}！洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}請{ㄑㄧㄥˇ}在{ㄗㄞˋ}洗{ㄒㄧˇ}手{ㄕㄡˇ}台{ㄊㄞˊ}上{ㄕㄤˋ}方{ㄈㄤ}甩{ㄕㄨㄞˇ}乾{ㄍㄢ}，或{ㄏㄨㄛˋ}用{ㄩㄥˋ}擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}擦{ㄘㄚ}乾{ㄍㄢ}喔{ㄛ}。"
-            }
+            { villain: '菸蒂怪', villainIcon: monsters.cigarette, scenario: "😱 哎{ㄞ}呀{ㄧㄚ}！長{ㄓㄤˇ}著{ㄓㄜ˙}腳{ㄐㄧㄠˇ}的{ㄉㄜ˙}【菸{ㄧㄢ}蒂{ㄉㄧˋ}怪{ㄍㄨㄞˋ}】正{ㄓㄥˋ}準{ㄓㄨㄣˇ}備{ㄅㄟˋ}跳{ㄊㄧㄠˋ}進{ㄐㄧㄣˋ}水{ㄕㄨㄟˇ}溝{ㄍㄡ}裡{ㄌㄧˇ}！", question: "請{ㄑㄧㄥˇ}問{ㄨㄣˋ}亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}到{ㄉㄠˋ}水{ㄕㄨㄟˇ}溝{ㄍㄡ}，最{ㄗㄨㄟˋ}後{ㄏㄡˋ}會{ㄏㄨㄟˋ}順{ㄕㄨㄣˋ}著{ㄓㄜ˙}水{ㄕㄨㄟˇ}流{ㄌㄧㄡˊ}，流{ㄌㄧㄡˊ}到{ㄉㄠˋ}哪{ㄋㄚˇ}裡{ㄌㄧˇ}造{ㄗㄠˋ}成{ㄔㄥˊ}生{ㄕㄥ}態{ㄊㄞˋ}污{ㄨ}染{ㄖㄢˇ}呢{ㄋㄜ˙}?", options: ["(A) 美{ㄇㄟˇ}麗{ㄌㄧˋ}的{ㄉㄜ˙}大{ㄉㄚˋ}海{ㄏㄞˇ}裡{ㄌㄧˇ}", "(B) 遙{ㄧㄠˊ}遠{ㄩㄢˇ}的{ㄉㄜ˙}外{ㄨㄞˋ}太{ㄊㄞˋ}空{ㄎㄨㄥ}"], correctAnswer: 0, explanation: "水{ㄕㄨㄟˇ}溝{ㄍㄡ}不{ㄅㄨˊ}是{ㄕˋ}菸{ㄧㄢ}灰{ㄏㄨㄟ}缸{ㄍㄤ}，菸{ㄧㄢ}蒂{ㄉㄧˋ} 會{ㄏㄨㄟˋ}順{ㄕㄨㄣˋ}著{ㄓㄜ˙}溪{ㄒㄧ}流{ㄌㄧㄡˊ}，流{ㄌㄧㄡˊ}進{ㄐㄧㄣˋ}大{ㄉㄚˋ}海{ㄏㄞˇ}，毒{ㄉㄨˊ}害{ㄏㄞˋ}海{ㄏㄞˇ}洋{ㄧㄤˊ}生{ㄕㄥ}物{ㄨˋ}喔{ㄛ}！" },
+            { villain: '塑膠濾嘴怪', villainIcon: monsters.plastic, scenario: "🤔 【塑{ㄙㄨˋ}膠{ㄐㄧㄠ}濾{ㄌㄩˋ}嘴{ㄗㄨㄟˇ}怪{ㄍㄨㄞˋ}】笑{ㄒㄧㄠˋ}著{ㄓㄜ˙}說{ㄕㄨㄛ}：「我{ㄨㄛˇ}是{ㄕˋ}紙{ㄓˇ}做{ㄗㄨㄛˋ}的{ㄉㄜ˙}，很{ㄏㄣˇ}快{ㄎㄨㄞˋ}就{ㄐㄧㄡˋ}爛{ㄌㄢˋ}掉{ㄉㄧㄠˋ}啦{ㄌㄚ}！」", question: "其{ㄑㄧˊ}實{ㄕˊ}菸{ㄧㄢ}蒂{ㄉㄧˋ}的{ㄉㄜ˙}濾{ㄌㄩˋ}嘴{ㄗㄨㄟˇ}是{ㄕˋ}塑{ㄙㄨˋ}膠{ㄐㄧㄠ}做{ㄗㄨㄛˋ}的{ㄉㄜ˙}，請{ㄑㄧㄥˇ}問{ㄨㄣˋ}它{ㄊㄚ}在{ㄗㄞˋ}大{ㄉㄚˋ}自{ㄗˋ}然{ㄖㄢˊ}中{ㄓㄨㄥ}大{ㄉㄚˋ}約{ㄩㄝ}需{ㄒㄩ}要{ㄧㄠˋ}多{ㄉㄨㄛ}久{ㄐㄧㄡˇ}才{ㄘㄞˊ}能{ㄋㄥˊ}分{ㄈㄣ}解{ㄐㄧㄝˇ}？", options: ["(A) 1個{ㄍㄜ˙}禮{ㄌㄧˇ}拜{ㄅㄞˋ}", "(B) 15年{ㄋㄧㄢˊ}以{ㄧˇ}上{ㄕㄤˋ}"], correctAnswer: 1, explanation: "菸{ㄧㄢ}蒂{ㄉㄧˋ}含{ㄏㄢˊ}有{ㄧㄡˇ}毒{ㄉㄨˊ}物{ㄨˋ}質{ㄓˊ}與{ㄩˇ}塑{ㄙㄨˋ}膠{ㄐㄧㄠ}微{ㄨㄟˊ}粒{ㄌㄧˋ}，極{ㄐㄧˊ}難{ㄋㄢˊ}分{ㄈㄣ}解{ㄐㄧㄝˇ}，千{ㄑㄧㄢ}萬{ㄨㄢˋ}別{ㄅㄧㄝˊ}被{ㄅㄟˋ}騙{ㄆㄧㄢˋ}了{ㄌㄜ˙}！" },
+            { villain: '迷路阿伯', villainIcon: monsters.grandpa, scenario: "👴 遇{ㄩˋ}到{ㄉㄠˋ}家{ㄐㄧㄚ}裡{ㄌㄧˇ}的{ㄉㄜ˙}長{ㄓㄤˇ}輩{ㄅㄟˋ}抽{ㄔㄡ}完{ㄨㄢˊ}菸{ㄧㄢ}，不{ㄅㄨˋ}知{ㄓ}道{ㄉㄠˋ}要{ㄧㄠˋ}把{ㄅㄚˇ}菸{ㄧㄢ}蒂{ㄉㄧˋ}丟{ㄉㄧㄡ}哪{ㄋㄚˇ}...", question: "如{ㄖㄨˊ}果{ㄍㄨㄛˇ}看{ㄎㄢˋ}到{ㄉㄠˋ}家{ㄐㄧㄚ}裡{ㄌㄧˇ}的{ㄉㄜ˙}長{ㄓㄤˇ}輩{ㄅㄟˋ}抽{ㄔㄡ}完{ㄨㄢˊ}菸{ㄧㄢ}，我{ㄨㄛˇ}們{ㄇㄣ˙}應{ㄧㄥ}該{ㄍㄞ}提{ㄊㄧˊ}醒{ㄒㄧㄥˇ}他{ㄊㄚ}把{ㄅㄚˇ}菸{ㄧㄢ}蒂{ㄉㄧˋ}丟{ㄉㄧㄡ}在{ㄗㄞˋ}哪{ㄋㄚˇ}裡{ㄌㄧˇ}才{ㄘㄞˊ}是{ㄕˋ}對{ㄉㄨㄟˋ}的{ㄉㄜ˙}？", options: ["(A) 菸{ㄧㄢ}蒂{ㄉㄧˋ}收{ㄕㄡ}集{ㄐㄧˊ}桶{ㄊㄨㄥˇ}", "(B) 水{ㄕㄨㄟˇ}溝{ㄍㄡ}裡{ㄌ一ˇ}"], correctAnswer: 0, explanation: "丟{ㄉㄧㄡ}進{ㄐㄧㄣˋ}專{ㄓㄨㄢ}用{ㄩㄥˋ}的{ㄉㄜ˙}「菸{ㄧㄢ}蒂{ㄉㄧˋ}收{ㄕㄡ}集{ㄐㄧˊ}桶{ㄊㄨㄥˇ}」最{ㄗㄨㄟˋ}安{ㄢ}全{ㄑㄩㄢˊ}！如{ㄖㄨˊ}果{ㄍㄨㄛˇ}只{ㄓˇ}能{ㄋㄥˊ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}，一{ㄧˊ}定{ㄉㄧㄥˋ}要{ㄧㄠˋ}確{ㄑㄩㄝˋ}實{ㄕˊ}熄{ㄒㄧˊ}滅{ㄇㄧㄝˋ}才{ㄘㄞˊ}不{ㄅㄨˊ}會{ㄏㄨㄟˋ}引{ㄧㄣˇ}發{ㄈㄚ}火{ㄏㄨㄛˇ}災{ㄗㄞ}喔{ㄛ}！" },
+            { villain: '罰單怪', villainIcon: monsters.ticket, scenario: "💸 氣{ㄑㄧˋ}噗{ㄆㄨ}噗{ㄆㄨ}的{ㄉㄜ˙}【罰{ㄈㄚˊ}單{ㄉㄢ}怪{ㄍㄨㄞˋ}】出{ㄔㄨ}現{ㄒㄧㄢˋ}了{ㄌㄜ˙}！亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}是{ㄕˋ}不{ㄅㄨˋ}對{ㄉㄨㄟˋ}的{ㄉㄜ˙}行{ㄒㄧㄥˊ}為{ㄨㄟˊ}！", question: "在{ㄗㄞˋ}路{ㄌㄨˋ}上{ㄕㄤˋ}亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}，除{ㄔㄨˊ}了{ㄌㄜˋ}會{ㄏㄨㄟˋ}把{ㄅㄚˇ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}弄{ㄋㄨㄥˋ}髒{ㄗㄤ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}環{ㄏㄨㄢˊ}保{ㄅㄠˇ}局{ㄐㄩˊ}罰{ㄈㄚˊ}多{ㄉㄨㄛ}少{ㄕㄠˇ}錢{ㄑㄧㄢˊ}呢{ㄋㄜ˙}？", options: ["(A) 不{ㄅㄨˊ}會{ㄏㄨㄟˋ}被{ㄅㄟˋ}罰{ㄈㄚˊ}錢{ㄑㄧㄢˊ}，記{ㄐㄧˋ}得{ㄉㄜ˙}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}", "(B) 依{ㄧ}廢{ㄈㄟˋ}棄{ㄑㄧˋ}物{ㄨˋ}清{ㄑㄧㄥ}理{ㄌㄧˇ}法{ㄈㄚˇ}，開{ㄎㄞ}罰{ㄈㄚˊ}1200元{ㄩㄢˊ}到{ㄉㄠˋ}6000元{ㄩㄢˊ}"], correctAnswer: 1, explanation: "亂{ㄌㄨㄢˋ}丟{ㄉㄧㄡ}菸{ㄧㄢ}蒂{ㄉㄧˋ}不{ㄅㄨˋ}僅{ㄐㄧㄣˇ}破{ㄆㄛˋ}壞{ㄏㄨㄞˋ}環{ㄏㄨㄢˊ}境{ㄐㄧㄥˋ}，還{ㄏㄞˊ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}荷{ㄏㄜˊ}包{ㄅㄠ}大{ㄉㄚˋ}失{ㄕ}血{ㄒㄧㄝˇ}！請{ㄑㄧㄥˇ}大{ㄉㄚˋ}家{ㄐㄧㄚ}發{ㄈㄚ}揮{ㄏㄨㄟ}公{ㄍㄨㄥ}德{ㄉㄜˊ}心{ㄒㄧㄣ}喔{ㄛ}！" },
+            { villain: '阻塞怪', villainIcon: monsters.block, scenario: "🚽 方{ㄈㄤ}方{ㄈㄤ}正{ㄓㄥˋ}正{ㄓㄥˋ}的{ㄉㄜ˙}【阻{ㄗㄨˇ}塞{ㄙㄞ}怪{ㄍㄨㄞˋ}】，想{ㄒㄧㄤˇ}跟{ㄍㄣ}著{ㄓㄜ˙}擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}一{ㄧˋ}起{ㄑㄧˇ}衝{ㄔㄨㄥ}進{ㄐㄧㄣˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}裡{ㄌㄧˇ}！", question: "如{ㄖㄨˊ}果{ㄍㄨㄛˇ}公{ㄍㄨㄥ}廁{ㄘㄜˋ}貼{ㄊㄧㄝ}著{ㄓㄜ˙}「衛{ㄨㄟˋ}生{ㄕㄥ}紙{ㄓˇ}丟{ㄉㄧㄡ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」，洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}用{ㄩㄥˋ}的{ㄉㄜ˙}「擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}」也{ㄧㄝˇ}可{ㄎㄜˇ}以{ㄧˇ}跟{ㄍㄣ}著{ㄓㄜ˙}丟{ㄉㄧㄡ}進{ㄐㄧㄣˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}嗎{ㄇㄚ˙}?", options: ["(A) 不{ㄅㄨˋ}可{ㄎㄜˇ}以{ㄧˇ}，會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}塞{ㄙㄞ}住{ㄓㄨˋ}", "(B) 可{ㄎㄜˇ}以{ㄧˇ}，只{ㄓˇ}要{ㄧㄠˋ}是{ㄕˋ}紙{ㄓˇ}類{ㄌㄟˋ}都{ㄉㄡ}行{ㄒㄧㄥˊ}"], correctAnswer: 0, explanation: "擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}為{ㄨㄟˋ}了{ㄌㄜ˙}吸{ㄒㄧ}水{ㄕㄨㄟˇ}，材{ㄘㄞˊ}質{ㄓˊ}比{ㄅㄧˇ}較{ㄐㄧㄠˋ}強{ㄑㄧㄤˊ}韌{ㄖㄣˋ}，沒{ㄇㄟˊ}辦{ㄅㄢˋ}法{ㄈㄚˇ}在{ㄗㄞˋ}水{ㄕㄨㄟˇ}裡{ㄌㄧˇ}快{ㄎㄨㄞˋ}速{ㄙㄨˋ}分{ㄈㄣ}解{ㄐㄧㄝˇ}，一{ㄧˊ}定{ㄉㄧㄥˋ}要{ㄧㄠˋ}丟{ㄉㄧㄡ}垃{ㄌㄜˋ}圾{ㄙㄜˋ}桶{ㄊㄨㄥˇ}喔{ㄛ}！" },
+            { villain: '省水怪', villainIcon: monsters.water, scenario: "💧 【省{ㄕㄥˇ}水{ㄕㄨㄟˇ}怪{ㄍㄨㄞˋ}】指{ㄓˇ}著{ㄓㄜ˙}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}的{ㄉㄜ˙}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，考{ㄎㄠˇ}驗{ㄧㄢˋ}你{ㄋㄧˇ}的{ㄉㄜ˙}環{ㄏㄨㄢˊ}保{ㄅㄠˇ}知{ㄓ}識{ㄕˋ}！", question: "現{ㄒㄧㄢˋ}在{ㄗㄞˋ}很{ㄏㄣˇ}多{ㄉㄨㄛ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}面{ㄇㄧㄢˋ}有{ㄧㄡˇ}「一{ㄧˊ}大{ㄉㄚˋ}一{ㄧˋ}小{ㄒㄧㄠˇ}」兩{ㄌㄧㄤˇ}個{ㄍㄜ˙}沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，請{ㄑㄧㄥˇ}問{ㄨㄣˋ}「小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}」代{ㄉㄞˋ}表{ㄅㄧㄠˇ}什{ㄕㄜˊ}麼{ㄇㄜ˙}意{ㄧˋ}思{ㄙ}？", options: ["(A) 聲{ㄕㄥ}音{ㄧㄣ}比{ㄅㄧˇ}較{ㄐㄧㄠˋ}小{ㄒㄧㄠˇ}，怕{ㄆㄚˋ}吵{ㄔㄠˇ}的{ㄉㄜ˙}時{ㄕㄡˊ}候{ㄏㄡˋ}按{ㄢˋ}的{ㄉㄜ˙}", "(B) 沖{ㄔㄨㄥ}小{ㄒㄧㄠˇ}便{ㄅㄧㄢˋ}用{ㄩㄥˋ}的{ㄉㄜ˙}，可{ㄎㄜˇ}以{ㄧˇ}節{ㄐㄧㄝˊ}約{ㄩㄝ}用{ㄩㄥˋ}水{ㄕㄨㄟˇ}"], correctAnswer: 1, explanation: "小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}是{ㄕˋ}為{ㄨㄟˋ}了{ㄌㄜ˙}「省{ㄕㄥˇ}水{ㄕㄨㄟˇ}」設{ㄕㄜˋ}計{ㄐㄧˋ}的{ㄉㄜ˙}！上{ㄕㄤˋ}小{ㄒㄧㄠˇ}號{ㄏㄠˋ}時{ㄕˊ}按{ㄢˋ}小{ㄒㄧㄠˇ}按{ㄢˋ}鈕{ㄋㄧㄡˇ}，就{ㄐㄧㄡˋ}能{ㄋㄥˊ}節{ㄐㄧㄝˊ}約{ㄩㄝ}珍{ㄓㄣ}貴{ㄍㄨㄟˋ}的{ㄉㄜ˙}水{ㄕㄨㄟˇ}資{ㄗ}源{ㄩㄢˊ}。" },
+            { villain: '碎裂炸彈怪', villainIcon: monsters.danger, scenario: "🤸 尖{ㄐㄧㄢ}尖{ㄐㄧㄢ}的{ㄉㄜ˙}【碎{ㄙㄨㄟˋ}裂{ㄌㄧㄝˋ}炸{ㄓㄚˋ}彈{ㄉㄢˋ}怪{ㄍㄨㄞˋ}】示{ㄕˋ}範{ㄈㄢˋ}了{ㄌㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}超{ㄔㄠ}可{ㄎㄜˇ}怕{ㄆㄚˋ}的{ㄉㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}：踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}！", question: "看{ㄎㄢˋ}到{ㄉㄠˋ}「坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}」時{ㄕˊ}時{ㄕˊ}應{ㄧㄥ}該{ㄍㄞ}怎{ㄗㄣˇ}麼{ㄇㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}才{ㄘㄞˊ}安{ㄢ}全{ㄑㄩㄢˊ}又{ㄧㄡˋ}衛{ㄨㄟˋ}生{ㄕㄥ}？", options: ["(A) 練{ㄌㄧㄢˋ}武{ㄨˇ}功{ㄍㄨㄥ}，雙{ㄕㄨㄤ}腳{ㄐㄧㄠˇ}踩{ㄘㄞˇ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}座{ㄗㄨㄛˋ}上{ㄕㄤˋ}", "(B) 消{ㄒㄧㄠ}毒{ㄉㄨˊ}後{ㄏㄡˋ}，坐{ㄗㄨㄛˋ}在{ㄗㄞˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}"], correctAnswer: 1, explanation: "蹲{ㄉㄨㄣ}踩{ㄘㄞˇ}在{ㄗㄞˋ}坐{ㄗㄨㄛˋ}式{ㄕˋ}馬{ㄇㄚˇ}桶{ㄊㄨㄥˇ}上{ㄕㄤˋ}非{ㄈㄟ}常{ㄔㄤˊ}危{ㄨㄟˊ}險{ㄒㄧㄢˇ}，陶{ㄊㄠˊ}瓷{ㄘˊ}破{ㄆㄛˋ}裂{ㄌㄧㄝˋ}會{ㄏㄨㄟˋ}讓{ㄖㄤˋ}人{ㄖㄣˊ}受{ㄕㄡˋ}重{ㄓㄨㄥˋ}傷{ㄕㄤ}！請{ㄑㄧㄥˇ}務{ㄨˋ}必{ㄅㄧˋ}坐{ㄗㄨㄛˋ}著{ㄓㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}。" },
+            { villain: '臭臭怪', villainIcon: monsters.stinky, scenario: "🤢 上{ㄕㄤˋ}完{ㄨㄢˊ}廁{ㄘㄜˋ}所{ㄙㄨㄛˇ}，【臭{ㄔㄡˋ}臭{ㄔㄡˋ}怪{ㄍㄨㄞˋ}】希{ㄒㄧ}望{ㄨㄤˋ}大{ㄉㄚˋ}家{ㄐㄧㄚ}直{ㄓˊ}接{ㄐㄧㄝ}離{ㄌㄧˊ}開{ㄎㄞ}不{ㄅㄨˋ}要{ㄧㄠˋ}沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}...", question: "為{ㄨㄟˋ}了{ㄌㄜ˙}讓{ㄖㄤˋ}下{ㄒㄧㄚˋ}一{ㄧˊ}個{ㄍㄜ˙}使{ㄕˇ}用{ㄩㄥˋ}者{ㄓㄜˇ}有{ㄧㄡˇ}乾{ㄍㄢ}淨{ㄐㄧㄥˋ}的{ㄉㄜ˙}廁{ㄘㄜˋ}所{ㄙㄨㄛˇ}可{ㄎㄜˇ}以{ㄧˇ}用{ㄩㄥˋ}，離{ㄌㄧˊ}開{ㄎㄞ}前{ㄑㄧㄢˊ}最{ㄗㄨㄟˋ}重{ㄓㄨㄥˋ}要{ㄧㄠˋ}的{ㄉㄜ˙}一{ㄧˊ}個{ㄍㄜ˙}動{ㄉㄨㄥˋ}作{ㄗㄨㄛˋ}是{ㄕˋ}什{ㄕㄜˊ}麼{ㄇㄜ˙}？", options: ["(A) 沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}", "(B) 什{ㄕㄜˊ}麼{ㄇㄜ˙}都{ㄉㄡ}不{ㄅㄨˋ}做{ㄗㄨㄛˋ}直{ㄓˊ}接{ㄐㄧㄝ}離{ㄌㄧˊ}開{ㄎㄞ}"], correctAnswer: 0, explanation: "隨{ㄙㄨㄟˊ}手{ㄕㄡˇ}沖{ㄔㄨㄥ}水{ㄕㄨㄟˇ}是{ㄕˋ}基{ㄐㄧ}本{ㄅㄣˇ}的{ㄉㄜ˙}公{ㄍㄨㄥ}廁{ㄘㄜˋ}禮{ㄌㄧˇ}儀{ㄧˊ}，大{ㄉㄚˋ}家{ㄐㄧㄚ}一{ㄧˋ}起{ㄑㄧˇ}保{ㄅㄠˇ}持{ㄔˊ}乾{ㄍㄢ}淨{ㄐㄧㄥˋ}不{ㄅㄨˊ}發{ㄈㄚ}臭{ㄔㄡˋ}！" },
+            { villain: '滑倒怪', villainIcon: monsters.slip, scenario: "💦 趕{ㄍㄢˇ}時{ㄕˊ}間{ㄐㄧㄢ}的{ㄉㄜ˙}【滑{ㄏㄨㄚˊ}倒{ㄉㄠˇ}怪{ㄍㄨㄞˋ}】，洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}用{ㄩㄥˋ}力{ㄌㄧˋ}把{ㄅㄚˇ}水{ㄕㄨㄟˇ}狂{ㄎㄨㄤˊ}甩{ㄕㄨㄞˇ}在{ㄗㄞˋ}地{ㄉㄧˋ}板{ㄅㄢˇ}上{ㄕㄤˋ}！", question: "為{ㄨㄟˋ}了{ㄌㄜ˙}趕{ㄍㄢˇ}快{ㄎㄨㄞˋ}出{ㄔㄨ}去{ㄑㄩˋ}玩{ㄨㄢˊ}，上{ㄕㄤˋ}完{ㄨㄢˊ}廁{ㄘㄜˋ}所{ㄙㄨㄛˇ}洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}用{ㄩㄥˋ}力{ㄌㄧˋ}把{ㄅㄚˇ}水{ㄕㄨㄟˇ}甩{ㄕㄨㄞˇ}在{ㄗㄞˋ}地{ㄉㄧˋ}板{ㄅㄢˇ}上{ㄕㄤˋ}就{ㄐㄧㄡˋ}好{ㄏㄠˇ}，請{ㄑㄧㄥˇ}問{ㄨㄣˋ}這{ㄓㄜˋ}樣{ㄧㄤˋ}正{ㄓㄥˋ}確{ㄑㄩㄝˋ}嗎{ㄇㄚ˙}?", options: ["(A) 錯{ㄘㄨㄛˋ}誤{ㄨˋ}", "(B) 正{ㄓㄥˋ}確{ㄑㄩㄝˋ}"], correctAnswer: 0, explanation: "地{ㄉㄧˋ}板{ㄅㄢˇ}積{ㄐㄧ}水{ㄕㄨㄟˇ}很{ㄏㄣˇ}容{ㄖㄨㄥˊ}易{ㄧˋ}害{ㄏㄞˋ}別{ㄅㄧㄝˊ}人{ㄖㄣˊ}滑{ㄏㄨㄚˊ}倒{ㄉㄠˇ}受{ㄕㄡˋ}傷{ㄕㄤ}！洗{ㄒㄧˇ}完{ㄨㄢˊ}手{ㄕㄡˇ}請{ㄑㄧㄥˇ}在{ㄗㄞˋ}洗{ㄒㄧˇ}手{ㄕㄡˇ}台{ㄊㄞˊ}上{ㄕㄤˋ}方{ㄈㄤ}甩{ㄕㄨㄞˇ}乾{ㄍㄢ}，或{ㄏㄨㄛˋ}用{ㄩㄥˋ}擦{ㄘㄚ}手{ㄕㄡˇ}紙{ㄓˇ}擦{ㄘㄚ}乾{ㄍㄢ}喔{ㄛ}。" }
         ];
-
-        let gameState = 'start'; 
-        let currentQ = 0;
-        let score = 0;
-        let answeredStatus = new Array(9).fill(null); 
-        let feedback = null;
-        let showConfirmModal = false;
-
-        const appDiv = document.getElementById('app');
 
         const gridColors = [
             'bg-red-400 text-red-900', 'bg-orange-400 text-orange-900', 'bg-amber-400 text-amber-900',
@@ -273,7 +151,6 @@
             'bg-cyan-400 text-cyan-900', 'bg-blue-400 text-blue-900', 'bg-indigo-400 text-indigo-900'
         ];
 
-        // --- 全新注音解析工具 ---
         const parseZhuyin = (str) => {
             if (!str) return '';
             return str.replace(/(.)\{(.*?)\}/g, (match, baseChar, zhuyinStr) => {
@@ -282,7 +159,6 @@
                 else if (symbols.includes('ˊ')) { tone = 'ˊ'; symbols = symbols.replace('ˊ', ''); } 
                 else if (symbols.includes('ˇ')) { tone = 'ˇ'; symbols = symbols.replace('ˇ', ''); } 
                 else if (symbols.includes('ˋ')) { tone = 'ˋ'; symbols = symbols.replace('ˋ', ''); }
-
                 let symbolsHtml = '';
                 if (isLightTone) symbolsHtml += '<span class="z-sym light-tone">˙</span>';
                 for (let i = 0; i < symbols.length; i++) { symbolsHtml += `<span class="z-sym">${symbols[i]}</span>`; }
@@ -290,17 +166,156 @@
             });
         };
 
-        function render() {
-            let content = '';
-            if (gameState === 'start') content = renderStart();
-            else if (gameState === 'grid') content = renderGrid();
-            else if (gameState === 'playing') content = renderPlaying();
-            else if (gameState === 'result') content = renderResult();
+        let parsedQuestions = [];
+        let gameState = 'start'; 
+        let currentQ = 0;
+        let score = 0;
+        let answeredStatus = new Array(9).fill(null); 
+        let feedback = null;
+        let dom = {};
 
-            let modalHtml = '';
-            if (showConfirmModal) {
-                modalHtml = `
-                <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-[4vh]">
+        function initViews() {
+            const appDiv = document.getElementById('app');
+            appDiv.innerHTML = `
+                <!-- Start View -->
+                <div id="view-start" class="hidden-view w-full h-full bg-white/95 backdrop-blur-md rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1.5rem,4vh,3rem)] flex flex-row items-center justify-center gap-[4vw] animate-zoom-in">
+                    <div class="flex-shrink-0 w-[40%] flex items-center justify-center animate-bounce-slow h-full">
+                        <!-- 加入動態防爆寬度限制 max-w-[clamp(...)]，確保不會在特別窄的橫向螢幕溢出 -->
+                        <div class="w-full max-w-[clamp(200px,60vh,400px)] aspect-square bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[clamp(6px,1.5vh,12px)] border-white relative">
+                            <i data-lucide="leaf" class="w-[40%] h-[40%] text-white"></i>
+                            <i data-lucide="sparkles" class="w-[15%] h-[15%] text-yellow-300 absolute top-[15%] right-[15%] animate-pulse"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex flex-col items-start justify-between h-full py-[1vh]">
+                        <div class="flex items-center gap-[1.5vw] bg-white shadow-sm border-2 border-gray-100 rounded-full py-[1.5vh] px-[2vw] w-max">
+                            <img src="image_1c45dd.png" alt="南投環保局標誌" class="h-[clamp(30px,6vh,60px)] object-contain" />
+                            <h2 class="text-green-800 font-black text-[clamp(1rem,2.5vh,1.8rem)] tracking-widest pt-1">南投縣政府環境保護局</h2>
+                        </div>
+                        <h1 class="font-black leading-tight drop-shadow-md flex items-center justify-start w-full whitespace-nowrap gap-[1vw] mb-[1vh]">
+                            <span class="text-blue-800 text-[clamp(1.2rem,3.5vw,3.5rem)]">環保小尖兵</span>
+                            <i data-lucide="shield-check" class="h-[clamp(1.5rem,4vw,4rem)] w-auto text-green-500 drop-shadow-sm flex-shrink-0"></i>
+                            <span class="text-orange-500 text-[clamp(1.2rem,3.5vw,3.5rem)]">沙包挑戰賽！</span>
+                        </h1>
+                        <div class="w-full bg-blue-50/80 p-[clamp(1.5rem,3.5vh,2.5rem)] rounded-[clamp(1.5rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col justify-center gap-[1.5vh]">
+                            <h3 class="text-center font-black text-[clamp(1.5rem,3.5vh,2rem)] text-orange-600 tracking-widest drop-shadow-sm">~~ 歡迎來到敦和國小 ~~</h3>
+                            <div class="w-full flex flex-col gap-[1vh] items-center justify-center">
+                                <p class="text-gray-800 font-black text-[clamp(1.2rem,3vh,1.8rem)]">快拿起手上的沙包</p>
+                                <p class="text-gray-800 font-black text-[clamp(1.2rem,3vh,1.8rem)]">丟向九宮格選擇題目</p>
+                                <p class="text-blue-700 font-black text-[clamp(1.5rem,3.5vh,2rem)] drop-shadow-sm mt-[0.5vh]">一起打敗污染怪獸吧!!!</p>
+                            </div>
+                        </div>
+                        <button onclick="handleStart()" class="grid-btn bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-[clamp(1.5rem,3.5vh,2.5rem)] py-[clamp(1.2rem,2.5vh,2rem)] px-[clamp(2rem,5vw,4rem)] rounded-full flex items-center justify-center gap-[1vw] hover:from-green-500 hover:to-green-700">
+                            <i data-lucide="play-circle" class="w-[clamp(2rem,4.5vh,3.5rem)] h-[clamp(2rem,4.5vh,3.5rem)]"></i> 開始挑戰！
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grid View -->
+                <div id="view-grid" class="hidden-view w-full h-full flex flex-row gap-[3vw] animate-fade-in">
+                    <div class="flex-shrink-0 w-[35%] h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-[clamp(1rem,3.5vh,2.5rem)] rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white relative">
+                        <div class="flex flex-col items-center justify-center gap-[1.5vh] bg-gradient-to-b from-green-50 to-blue-50 px-[2vw] py-[2vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(2px,0.5vh,4px)] border-white shadow-md flex-shrink-0 w-full mx-auto">
+                            <div class="flex items-center justify-center gap-[1vw] w-full">
+                                <i data-lucide="sparkles" class="w-[clamp(1.5rem,3.5vh,2.5rem)] h-auto text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
+                                <h2 class="text-green-800 font-black text-[clamp(1.2rem,3vh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
+                            </div>
+                            <div class="w-[80%] h-[2px] bg-gray-300/50 rounded-full"></div>
+                            <div class="flex items-center justify-center gap-[1vw] w-full">
+                                <h2 class="text-blue-800 font-black text-[clamp(1.2rem,3vh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">無菸好環境</h2>
+                                <i data-lucide="droplets" class="w-[clamp(1.5rem,3.5vh,2.5rem)] h-auto text-cyan-500 drop-shadow-sm animate-bounce-slow flex-shrink-0"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center justify-center flex-1 min-h-0">
+                            <div class="w-[clamp(4rem,10vh,6rem)] h-[clamp(4rem,10vh,6rem)] bg-green-100 rounded-full flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-green-400 shadow-md mb-[2vh]">
+                                <i data-lucide="leaf" class="w-[45%] h-[45%] text-green-500"></i>
+                            </div>
+                            <h2 class="text-[clamp(1.8rem,4vh,2.5rem)] font-black text-gray-800 mb-[1vh]">請選題！</h2>
+                            <p class="text-green-600 font-bold text-[clamp(1.2rem,3vh,1.5rem)]">目前得分：<span id="grid-score" class="text-[clamp(2rem,5vh,3rem)] text-orange-500 ml-2 drop-shadow-sm">0</span></p>
+                        </div>
+                        <div class="flex flex-col gap-[2vh] flex-shrink-0">
+                            <div class="bg-blue-50/80 p-[2vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 flex flex-col items-center justify-center">
+                                <i data-lucide="target" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-blue-500 mb-[1vh] animate-bounce"></i>
+                                <p class="text-[clamp(1rem,2.5vh,1.5rem)] font-bold text-center text-gray-700 leading-snug">沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span></p>
+                            </div>
+                            <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[clamp(1rem,3vh,2rem)] py-[2vh] shadow-sm border-[clamp(3px,0.5vh,6px)] border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-[1vw] font-black">
+                                <i data-lucide="rotate-ccw" class="w-[clamp(1.2rem,3vh,2rem)] h-auto"></i>
+                                <span class="text-[clamp(1.2rem,3vh,2rem)]">重新開始</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 h-full bg-white/70 backdrop-blur-md p-[clamp(1.5rem,4vh,3rem)] rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white flex items-center justify-center">
+                        <!-- 加入動態防爆寬度限制 max-w-[min(100%,75vh)]，確保不會把版面撐破 -->
+                        <div id="grid-container" class="w-full max-w-[min(100%,75vh)] aspect-square grid grid-cols-3 gap-[2.5vh]">
+                            <!-- Grid buttons injected here once -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Playing View -->
+                <div id="view-playing" class="hidden-view w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1rem,3vh,2.5rem)] flex flex-row gap-[3vw] animate-slide-up relative">
+                    <div class="flex-shrink-0 w-[30%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1rem,3vh,2rem)] flex flex-col items-center justify-between border-[clamp(4px,0.8vh,10px)] border-gray-300 relative shadow-inner">
+                        <div class="absolute top-[2vh] left-[2vw] bg-blue-600 text-white font-black px-[1vw] py-[1vh] rounded-xl text-[clamp(0.8rem,2vh,1.2rem)] shadow-md border-2 border-blue-400 z-20 flex items-center gap-[0.5vw]">
+                            <i data-lucide="hash" class="w-[clamp(1rem,2.5vh,1.5rem)] h-auto"></i> 題 <span id="play-qnum"></span>
+                        </div>
+                        <div class="flex-1 w-full min-h-0 flex items-center justify-center relative">
+                            <div class="absolute w-[85%] aspect-square bg-gray-300/40 rounded-full blur-xl transform translate-y-[10%]"></div>
+                            <div id="play-monster-container"></div>
+                        </div>
+                        <div class="bg-white/90 px-[1.5vw] py-[1.5vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
+                            <span class="text-[clamp(0.8rem,2vh,1.2rem)] font-bold text-gray-500 block mb-[0.5vh]">遇到污染怪獸：</span>
+                            <span id="play-monster-name" class="text-[clamp(1.5rem,3.5vh,2.5rem)] font-black text-red-600 drop-shadow-sm"></span>
+                        </div>
+                    </div>
+                    <div class="flex-1 h-full flex flex-col justify-between py-0">
+                        <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-[clamp(1rem,2.5vh,1.5rem)] rounded-[clamp(1rem,3vh,2rem)] border-l-[clamp(4px,0.8vh,8px)] border-amber-400 shadow-sm flex items-center gap-[1vw]">
+                            <i data-lucide="alert-circle" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto text-amber-600 flex-shrink-0"></i>
+                            <span id="play-scenario" class="leading-relaxed zhuyin-text w-full text-[clamp(1rem,2.5vh,1.5rem)]"></span>
+                        </div>
+                        <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,3vh,2.5rem)] rounded-[clamp(1.5rem,4vh,3rem)] border-[clamp(3px,0.5vh,6px)] border-blue-200 shadow-inner flex items-center justify-center text-center my-[2vh]">
+                            <h2 id="play-question" class="text-[clamp(1.2rem,3.5vh,2.2rem)] font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full"></h2>
+                        </div>
+                        <div id="play-options" class="flex-shrink-0 flex flex-col gap-[1.5vh]"></div>
+                    </div>
+                    <div id="play-feedback" class="hidden-view absolute inset-0 z-50 flex items-center justify-center p-[4vh] bg-gray-900/70 backdrop-blur-sm rounded-[clamp(1.5rem,4vh,3rem)] animate-fade-in"></div>
+                </div>
+
+                <!-- Result View -->
+                <div id="view-result" class="hidden-view w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1.5rem,4vh,3rem)] flex flex-row gap-[4vw] animate-zoom-in relative">
+                    <div class="absolute top-[-20%] right-[-10%] w-[30vh] h-[30vh] bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute bottom-[-10%] left-[-10%] w-[25vh] h-[25vh] bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div id="result-badge-container" class="flex-shrink-0 w-[40%] h-full rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] flex flex-col items-center justify-evenly border-[clamp(6px,1vh,12px)] relative shadow-inner"></div>
+                    
+                    <div class="flex-1 h-full flex flex-col justify-between py-0">
+                        <div class="flex items-center gap-[1.5vw] bg-gray-50/80 px-[2vw] py-[1.5vh] rounded-full border-2 border-gray-200 shadow-sm w-max flex-shrink-0">
+                            <img src="image_1c45dd.png" class="h-[clamp(30px,6vh,60px)] object-contain" />
+                            <h3 class="text-[clamp(1rem,2.5vh,1.8rem)] font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
+                        </div>
+                        <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,4vh,3rem)] rounded-[clamp(1.5rem,4vh,3rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center my-[2vh]">
+                            <div class="flex items-center gap-[1vw] mb-[2.5vh] flex-shrink-0">
+                                <i data-lucide="party-popper" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-orange-500 animate-bounce"></i>
+                                <h3 class="text-[clamp(1.5rem,3.5vh,2.5rem)] font-black text-blue-800">闖關結果報告</h3>
+                                <i data-lucide="party-popper" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-orange-500 animate-bounce transform -scale-x-100"></i>
+                            </div>
+                            <p id="result-message" class="text-[clamp(1.2rem,3vh,2rem)] font-bold text-gray-700 leading-snug text-center mb-[4vh] flex-shrink-0"></p>
+                            <div class="flex w-full justify-center gap-[3vw] flex-shrink-0">
+                                <div class="bg-white p-[clamp(1.2rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-md flex flex-col items-center min-w-[20vw]">
+                                    <div class="text-gray-500 font-bold mb-[1vh] flex items-center gap-[0.5vw] text-[clamp(1rem,2.5vh,1.5rem)]"><i data-lucide="target" class="w-[clamp(1.2rem,3vh,1.8rem)] h-auto text-orange-400"></i> 獲得分數</div>
+                                    <div id="result-score-val" class="text-[clamp(2.5rem,6vh,4.5rem)] font-black text-orange-500"></div>
+                                </div>
+                                <div class="bg-white p-[clamp(1.2rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-md flex flex-col items-center min-w-[20vw]">
+                                    <div class="text-gray-500 font-bold mb-[1vh] flex items-center gap-[0.5vw] text-[clamp(1rem,2.5vh,1.5rem)]"><i data-lucide="swords" class="w-[clamp(1.2rem,3vh,1.8rem)] h-auto text-green-500"></i> 擊敗怪獸</div>
+                                    <div id="result-kill-val" class="text-[clamp(2.5rem,6vh,4.5rem)] font-black text-green-600"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-[clamp(1.5rem,3.5vh,2.5rem)] py-[clamp(1.2rem,2.5vh,2rem)] rounded-[clamp(1.5rem,4vh,3rem)] flex items-center justify-center gap-[1vw] hover:from-blue-600 hover:to-blue-800">
+                            <i data-lucide="refresh-ccw" class="w-[clamp(2rem,4.5vh,3.5rem)] h-auto"></i> 再玩一次
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Confirm Modal -->
+                <div id="modal-confirm" class="hidden-view fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-[4vh]">
                     <div class="bg-white p-[5vh] rounded-[3vh] shadow-2xl border-[clamp(6px,1vh,12px)] border-red-300 max-w-lg w-full text-center transform animate-zoom-in">
                         <div class="w-[12vh] h-[12vh] bg-red-100 rounded-full flex items-center justify-center border-[clamp(4px,0.5vh,8px)] border-red-400 mx-auto mb-[3vh]">
                             <i data-lucide="alert-triangle" class="w-[6vh] h-[6vh] text-red-500 animate-pulse"></i>
@@ -312,170 +327,113 @@
                             <button onclick="confirmRestart(true)" class="grid-btn flex-1 bg-red-500 text-white font-black text-[clamp(1.2rem,3vh,1.8rem)] py-[2.5vh] rounded-[2vh] border-[clamp(2px,0.5vh,4px)] border-red-600 hover:bg-red-600">確定重置</button>
                         </div>
                     </div>
-                </div>`;
-            }
-            appDiv.innerHTML = content + modalHtml;
+                </div>
+            `;
+
+            dom = {
+                start: document.getElementById('view-start'),
+                grid: document.getElementById('view-grid'),
+                playing: document.getElementById('view-playing'),
+                result: document.getElementById('view-result'),
+                confirm: document.getElementById('modal-confirm'),
+                gridScore: document.getElementById('grid-score'),
+                gridContainer: document.getElementById('grid-container'),
+                playQNum: document.getElementById('play-qnum'),
+                playMonsterContainer: document.getElementById('play-monster-container'),
+                playMonsterName: document.getElementById('play-monster-name'),
+                playScenario: document.getElementById('play-scenario'),
+                playQuestion: document.getElementById('play-question'),
+                playOptions: document.getElementById('play-options'),
+                playFeedback: document.getElementById('play-feedback'),
+                resultBadge: document.getElementById('result-badge-container'),
+                resultMessage: document.getElementById('result-message'),
+                resultScoreVal: document.getElementById('result-score-val'),
+                resultKillVal: document.getElementById('result-kill-val'),
+            };
+
+            // 預先產生好九宮格按鈕
+            dom.gridContainer.innerHTML = Array(9).fill(0).map((_, i) => `
+                <button id="grid-btn-${i}" onclick="selectQuestion(${i})" class="grid-btn relative w-full h-full aspect-square rounded-[clamp(1rem,3vh,2rem)] flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-white/60 overflow-hidden group ${gridColors[i]}">
+                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="text-[clamp(3rem,8vh,6rem)] font-black drop-shadow-lg">${i + 1}</span>
+                </button>
+            `).join('');
+            
+            // 初次初始化所有靜態圖示
             lucide.createIcons();
         }
 
-        window.handleStart = function() { gameState = 'grid'; answeredStatus = new Array(9).fill(null); score = 0; render(); }
-        window.promptRestart = function() { showConfirmModal = true; render(); }
-        window.confirmRestart = function(yes) {
-            showConfirmModal = false;
-            if(yes) { gameState = 'start'; answeredStatus = new Array(9).fill(null); score = 0; currentQ = 0; feedback = null; }
-            render();
-        }
-        window.selectQuestion = function(idx) {
-            if (answeredStatus[idx] !== null) return; 
-            currentQ = idx; gameState = 'playing'; feedback = null; render();
-        }
-        window.handleAnswer = function(idx) {
-            if (feedback !== null) return; 
-            const isCorrect = idx === questions[currentQ].correctAnswer;
-            if (isCorrect) score += 1;
-            answeredStatus[currentQ] = isCorrect;
-            feedback = { isCorrect: isCorrect, text: questions[currentQ].explanation };
-            render();
-        }
-        window.handleNext = function() {
-            let completedCount = answeredStatus.filter(s => s !== null).length;
-            if (completedCount === 9) gameState = 'result'; else gameState = 'grid';
-            render();
+        function switchView(viewName) {
+            dom.start.classList.add('hidden-view');
+            dom.grid.classList.add('hidden-view');
+            dom.playing.classList.add('hidden-view');
+            dom.result.classList.add('hidden-view');
+
+            if(viewName === 'start') {
+                dom.start.classList.remove('hidden-view');
+            } else if(viewName === 'grid') {
+                dom.grid.classList.remove('hidden-view');
+                updateGridState(); 
+            } else if(viewName === 'playing') {
+                dom.playing.classList.remove('hidden-view');
+                updatePlayingState();
+            } else if(viewName === 'result') {
+                dom.result.classList.remove('hidden-view');
+                updateResultState();
+            }
         }
 
-        // --- 1. 首頁 (單列標題 + 液態排版) ---
-        function renderStart() {
-            return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-md rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1.5rem,4vh,3rem)] flex flex-row items-center justify-center gap-[4vw] animate-zoom-in">
-                <!-- 左側：視覺插圖 -->
-                <div class="w-5/12 flex items-center justify-center animate-bounce-slow h-full">
-                    <div class="h-[clamp(200px,60vh,400px)] aspect-square bg-gradient-to-tr from-green-300 to-green-500 rounded-full flex items-center justify-center shadow-[0_15px_40px_rgba(34,197,94,0.3)] border-[clamp(6px,1.5vh,12px)] border-white relative">
-                        <i data-lucide="leaf" class="w-[40%] h-[40%] text-white"></i>
-                        <i data-lucide="sparkles" class="w-[15%] h-[15%] text-yellow-300 absolute top-[15%] right-[15%] animate-pulse"></i>
-                    </div>
-                </div>
-                <!-- 右側：標題與按鈕 -->
-                <div class="w-7/12 flex flex-col items-start justify-between h-full py-[1vh]">
-                    
-                    <!-- 認證區 -->
-                    <div class="flex items-center gap-[1.5vw] bg-white shadow-sm border-2 border-gray-100 rounded-full py-[1.5vh] px-[2vw] w-max">
-                        <img src="image_1c45dd.png" alt="南投環保局標誌" class="h-[clamp(30px,6vh,60px)] object-contain" />
-                        <h2 class="text-green-800 font-black text-[clamp(1rem,2.5vh,1.8rem)] tracking-widest pt-1">南投縣政府環境保護局</h2>
-                    </div>
-                    
-                    <!-- 標題與盾牌圖示 (單列不斷行排版) -->
-                    <h1 class="font-black leading-tight drop-shadow-md flex items-center justify-start w-full whitespace-nowrap gap-[1vw] mb-[1vh]">
-                        <span class="text-blue-800 text-[clamp(1.2rem,3.5vw,3.5rem)]">環保小尖兵</span>
-                        <i data-lucide="shield-check" class="h-[clamp(1.5rem,4vw,4rem)] w-auto text-green-500 drop-shadow-sm flex-shrink-0"></i>
-                        <span class="text-orange-500 text-[clamp(1.2rem,3.5vw,3.5rem)]">沙包挑戰賽！</span>
-                    </h1>
-                    
-                    <!-- 三列置中對齊排版風格 -->
-                    <div class="w-full bg-blue-50/80 p-[clamp(1.5rem,3.5vh,2.5rem)] rounded-[clamp(1.5rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col justify-center gap-[1.5vh]">
-                        <h3 class="text-center font-black text-[clamp(1.5rem,3.5vh,2rem)] text-orange-600 tracking-widest drop-shadow-sm">
-                            ~~ 歡迎來到敦和國小 ~~
-                        </h3>
-                        <div class="w-full flex flex-col gap-[1vh] items-center justify-center">
-                            <p class="text-gray-800 font-black text-[clamp(1.2rem,3vh,1.8rem)]">快拿起手上的沙包</p>
-                            <p class="text-gray-800 font-black text-[clamp(1.2rem,3vh,1.8rem)]">丟向九宮格選擇題目</p>
-                            <p class="text-blue-700 font-black text-[clamp(1.5rem,3.5vh,2rem)] drop-shadow-sm mt-[0.5vh]">一起打敗污染怪獸吧!!!</p>
-                        </div>
-                    </div>
-
-                    <!-- 按鈕 -->
-                    <button onclick="handleStart()" class="grid-btn bg-gradient-to-b from-green-400 to-green-600 text-white font-black text-[clamp(1.5rem,3.5vh,2.5rem)] py-[clamp(1.2rem,2.5vh,2rem)] px-[clamp(2rem,5vw,4rem)] rounded-full flex items-center justify-center gap-[1vw] hover:from-green-500 hover:to-green-700">
-                        <i data-lucide="play-circle" class="w-[clamp(2rem,4.5vh,3.5rem)] h-[clamp(2rem,4.5vh,3.5rem)]"></i> 開始挑戰！
-                    </button>
-                </div>
-            </div>
-            `;
-        }
-
-        // --- 2. 九宮格選單 (完美綁定高寬比不溢出) ---
-        function renderGrid() {
-            let gridHtml = answeredStatus.map((status, i) => {
+        function updateGridState() {
+            dom.gridScore.textContent = score * 100;
+            for(let i=0; i<9; i++) {
+                let status = answeredStatus[i];
                 let isDone = status !== null;
-                // 注意：這裡在 button 上加上了 aspect-square 來強鎖正方形比例，防止縮水塌陷
-                let btnColor = isDone ? 'bg-gray-200 text-gray-400 disabled' : gridColors[i];
-                let contentHtml = `<span class="text-[clamp(3rem,8vh,6rem)] font-black drop-shadow-lg">${i + 1}</span>`;
-                if (isDone) {
-                    if (status === true) contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-[45%] h-[45%] text-green-500 opacity-80 rotate-12"></i></div>`;
-                    else contentHtml = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="x-circle" class="w-[45%] h-[45%] text-red-400 opacity-80 -rotate-12"></i></div>`;
-                }
-                return `
-                <button onclick="selectQuestion(${i})" class="grid-btn relative w-full h-full aspect-square rounded-[clamp(1rem,3vh,2rem)] flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-white/60 overflow-hidden group ${btnColor}">
-                    ${isDone ? '' : '<div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>'}
-                    ${contentHtml}
-                </button>
-                `;
-            }).join('');
-
-            return `
-            <div class="w-full h-full flex flex-row gap-[3vw] animate-fade-in">
+                let btn = document.getElementById(`grid-btn-${i}`);
                 
-                <!-- 左側狀態 -->
-                <div class="w-[35%] h-full flex flex-col justify-between bg-white/90 backdrop-blur-md p-[clamp(1rem,3.5vh,2.5rem)] rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white relative">
-                    <div class="flex flex-col items-center justify-center gap-[1.5vh] bg-gradient-to-b from-green-50 to-blue-50 px-[2vw] py-[2vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(2px,0.5vh,4px)] border-white shadow-md flex-shrink-0 w-full mx-auto">
-                        <div class="flex items-center justify-center gap-[1vw] w-full">
-                            <i data-lucide="sparkles" class="w-[clamp(1.5rem,3.5vh,2.5rem)] h-auto text-yellow-500 drop-shadow-sm animate-pulse flex-shrink-0"></i>
-                            <h2 class="text-green-800 font-black text-[clamp(1.2rem,3vh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">公廁亮晶晶</h2>
-                        </div>
-                        <div class="w-[80%] h-[2px] bg-gray-300/50 rounded-full"></div>
-                        <div class="flex items-center justify-center gap-[1vw] w-full">
-                            <h2 class="text-blue-800 font-black text-[clamp(1.2rem,3vh,2rem)] tracking-wider drop-shadow-sm text-center whitespace-nowrap">無菸好環境</h2>
-                            <i data-lucide="droplets" class="w-[clamp(1.5rem,3.5vh,2.5rem)] h-auto text-cyan-500 drop-shadow-sm animate-bounce-slow flex-shrink-0"></i>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col items-center justify-center flex-1 min-h-0">
-                        <div class="w-[clamp(4rem,10vh,6rem)] h-[clamp(4rem,10vh,6rem)] bg-green-100 rounded-full flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-green-400 shadow-md mb-[2vh]">
-                            <i data-lucide="leaf" class="w-[45%] h-[45%] text-green-500"></i>
-                        </div>
-                        <h2 class="text-[clamp(1.8rem,4vh,2.5rem)] font-black text-gray-800 mb-[1vh]">請選題！</h2>
-                        <p class="text-green-600 font-bold text-[clamp(1.2rem,3vh,1.5rem)]">目前得分：<span class="text-[clamp(2rem,5vh,3rem)] text-orange-500 ml-2 drop-shadow-sm">${score * 100}</span></p>
-                    </div>
-
-                    <div class="flex flex-col gap-[2vh] flex-shrink-0">
-                        <div class="bg-blue-50/80 p-[2vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 flex flex-col items-center justify-center">
-                            <i data-lucide="target" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-blue-500 mb-[1vh] animate-bounce"></i>
-                            <p class="text-[clamp(1rem,2.5vh,1.5rem)] font-bold text-center text-gray-700 leading-snug">沙包丟中幾號呢？<br/><span class="text-blue-600 font-black">點擊右邊對應號碼</span></p>
-                        </div>
-                        <button onclick="promptRestart()" class="grid-btn w-full bg-white/90 backdrop-blur-sm text-red-500 rounded-[clamp(1rem,3vh,2rem)] py-[2vh] shadow-sm border-[clamp(3px,0.5vh,6px)] border-red-200 hover:bg-red-50 transition-all flex items-center justify-center gap-[1vw] font-black">
-                            <i data-lucide="rotate-ccw" class="w-[clamp(1.2rem,3vh,2rem)] h-auto"></i>
-                            <span class="text-[clamp(1.2rem,3vh,2rem)]">重新開始</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 右側九宮格 -->
-                <div class="w-[65%] h-full bg-white/70 backdrop-blur-md p-[clamp(1.5rem,4vh,3rem)] rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white flex items-center justify-center">
-                    <div class="h-full aspect-square grid grid-cols-3 gap-[2.5vh]">
-                        ${gridHtml}
-                    </div>
-                </div>
-            </div>
-            `;
+                btn.className = `grid-btn relative w-full h-full aspect-square rounded-[clamp(1rem,3vh,2rem)] flex items-center justify-center border-[clamp(3px,0.5vh,6px)] border-white/60 overflow-hidden group ${isDone ? 'bg-gray-200 text-gray-400 disabled' : gridColors[i]}`;
+                
+                if (isDone) {
+                    btn.onclick = null;
+                    if (status === true) {
+                        btn.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="check-circle" class="w-[45%] h-[45%] text-green-500 opacity-80 rotate-12"></i></div>`;
+                    } else {
+                        btn.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="x-circle" class="w-[45%] h-[45%] text-red-400 opacity-80 -rotate-12"></i></div>`;
+                    }
+                } else {
+                    btn.onclick = () => selectQuestion(i);
+                    btn.innerHTML = `<div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div><span class="text-[clamp(3rem,8vh,6rem)] font-black drop-shadow-lg">${i + 1}</span>`;
+                }
+            }
+            lucide.createIcons();
         }
 
-        // --- 3. 遊戲答題中 (智慧限縮字體與間距) ---
-        function renderPlaying() {
-            const q = questions[currentQ];
-            let optionsHtml = q.options.map((opt, idx) => {
+        function updatePlayingState() {
+            const q = parsedQuestions[currentQ];
+            dom.playQNum.textContent = currentQ + 1;
+            dom.playMonsterName.textContent = q.villain;
+
+            let villainClass = feedback ? (feedback.isCorrect ? 'scale-75 rotate-12 opacity-30 grayscale blur-md' : 'scale-110 -rotate-12 drop-shadow-2xl') : '';
+            dom.playMonsterContainer.className = `w-full h-full flex items-center justify-center transition-all duration-700 ${villainClass} relative z-10`;
+            dom.playMonsterContainer.innerHTML = q.villainIcon;
+            
+            dom.playScenario.innerHTML = q.pScenario;
+            dom.playQuestion.innerHTML = q.pQuestion;
+
+            dom.playOptions.innerHTML = q.pOptions.map((opt, idx) => {
                 let btnStateClass = feedback === null 
                     ? 'bg-white border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-400 grid-btn cursor-pointer' 
                     : (idx === q.correctAnswer ? 'bg-green-100 border-green-500 text-green-800 shadow-inner' : 'bg-gray-100 border-gray-200 text-gray-400');
                 return `
                 <button ${feedback !== null ? 'disabled' : ''} onclick="handleAnswer(${idx})" class="w-full text-left p-[clamp(0.8rem,2.2vh,1.5rem)] rounded-[clamp(1rem,3vh,2rem)] font-black text-[clamp(1rem,2.8vh,1.5rem)] border-[clamp(3px,0.5vh,6px)] relative flex justify-between items-center ${btnStateClass}">
-                    <span class="zhuyin-text flex-1 pr-2">${parseZhuyin(opt)}</span>
+                    <span class="zhuyin-text flex-1 pr-2">${opt}</span>
                     ${feedback === null ? `<i data-lucide="mouse-pointer-click" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto opacity-30 flex-shrink-0 ml-1"></i>` : ''}
                 </button>
                 `;
             }).join('');
 
-            let feedbackHtml = '';
             if (feedback) {
-                feedbackHtml = `
-                <div class="absolute inset-0 z-50 flex items-center justify-center p-[4vh] bg-gray-900/70 backdrop-blur-sm rounded-[clamp(1.5rem,4vh,3rem)] animate-fade-in">
+                dom.playFeedback.classList.remove('hidden-view');
+                dom.playFeedback.innerHTML = `
                     <div class="bg-white w-[80%] max-w-2xl h-[85vh] rounded-[clamp(2rem,5vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] shadow-2xl flex flex-col items-center justify-evenly text-center transform animate-zoom-in border-[clamp(6px,1vh,12px)] ${feedback.isCorrect ? 'border-green-400' : 'border-orange-400'}">
                         ${feedback.isCorrect ? `
                             <div class="w-[clamp(4rem,10vh,6rem)] h-[clamp(4rem,10vh,6rem)] bg-green-100 rounded-full flex flex-shrink-0 items-center justify-center border-[clamp(3px,0.5vh,6px)] border-green-400 animate-bounce">
@@ -489,63 +447,20 @@
                             <h3 class="text-[clamp(2rem,5vh,3rem)] font-black text-red-600 flex-shrink-0">哎呀！打歪了</h3>
                         `}
                         <div class="w-full bg-gray-50 p-[clamp(1rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(2px,0.5vh,4px)] border-gray-200 text-left flex-shrink-0">
-                            <p class="text-gray-700 font-bold text-[clamp(1.2rem,3vh,1.8rem)] leading-relaxed zhuyin-text">${parseZhuyin(feedback.text)}</p>
+                            <p class="text-gray-700 font-bold text-[clamp(1.2rem,3vh,1.8rem)] leading-relaxed zhuyin-text">${q.pExplanation}</p>
                         </div>
                         <button onclick="handleNext()" class="grid-btn w-full py-[clamp(1.2rem,3vh,2rem)] rounded-full font-black text-[clamp(1.5rem,3.5vh,2rem)] text-white shadow-lg flex items-center justify-center gap-[1vw] ${feedback.isCorrect ? 'bg-green-500' : 'bg-orange-500'} cursor-pointer flex-shrink-0">
                             返回九宮格 <i data-lucide="arrow-right-circle" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto"></i>
                         </button>
                     </div>
-                </div>
                 `;
+            } else {
+                dom.playFeedback.classList.add('hidden-view');
             }
-
-            let villainClass = feedback ? (feedback.isCorrect ? 'scale-75 rotate-12 opacity-30 grayscale blur-md' : 'scale-110 -rotate-12 drop-shadow-2xl') : '';
-
-            return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1rem,3vh,2.5rem)] flex flex-row gap-[3vw] animate-slide-up relative">
-                <!-- 左側：怪獸展示區 -->
-                <div class="w-[30%] h-full bg-gradient-to-b from-gray-100 to-gray-200 rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1rem,3vh,2rem)] flex flex-col items-center justify-between border-[clamp(4px,0.8vh,10px)] border-gray-300 relative shadow-inner">
-                    <div class="absolute top-[2vh] left-[2vw] bg-blue-600 text-white font-black px-[1vw] py-[1vh] rounded-xl text-[clamp(0.8rem,2vh,1.2rem)] shadow-md border-2 border-blue-400 z-20 flex items-center gap-[0.5vw]">
-                        <i data-lucide="hash" class="w-[clamp(1rem,2.5vh,1.5rem)] h-auto"></i> 題 ${currentQ + 1}
-                    </div>
-                    
-                    <div class="flex-1 w-full min-h-0 flex items-center justify-center relative">
-                        <div class="absolute w-[85%] aspect-square bg-gray-300/40 rounded-full blur-xl transform translate-y-[10%]"></div>
-                        <div class="w-full h-full flex items-center justify-center transition-all duration-700 ${villainClass} relative z-10">
-                            ${q.villainIcon}
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white/90 px-[1.5vw] py-[1.5vh] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-gray-300 text-center shadow-md z-20 w-full flex-shrink-0">
-                        <span class="text-[clamp(0.8rem,2vh,1.2rem)] font-bold text-gray-500 block mb-[0.5vh]">遇到污染怪獸：</span>
-                        <span class="text-[clamp(1.5rem,3.5vh,2.5rem)] font-black text-red-600 drop-shadow-sm">${q.villain}</span>
-                    </div>
-                </div>
-
-                <!-- 右側：問答區 (靠 Flex 智慧擠壓分配) -->
-                <div class="w-[70%] h-full flex flex-col justify-between py-0">
-                    <div class="flex-shrink-0 bg-amber-100 text-amber-900 font-black p-[clamp(1rem,2.5vh,1.5rem)] rounded-[clamp(1rem,3vh,2rem)] border-l-[clamp(4px,0.8vh,8px)] border-amber-400 shadow-sm flex items-center gap-[1vw]">
-                        <i data-lucide="alert-circle" class="w-[clamp(1.5rem,4vh,2.5rem)] h-auto text-amber-600 flex-shrink-0"></i>
-                        <span class="leading-relaxed zhuyin-text w-full text-[clamp(1rem,2.5vh,1.5rem)]">${parseZhuyin(q.scenario)}</span>
-                    </div>
-                    
-                    <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,3vh,2.5rem)] rounded-[clamp(1.5rem,4vh,3rem)] border-[clamp(3px,0.5vh,6px)] border-blue-200 shadow-inner flex items-center justify-center text-center my-[2vh]">
-                        <h2 class="text-[clamp(1.2rem,3.5vh,2.2rem)] font-black text-gray-800 leading-snug drop-shadow-sm zhuyin-text w-full">
-                            ${parseZhuyin(q.question)}
-                        </h2>
-                    </div>
-                    
-                    <div class="flex-shrink-0 flex flex-col gap-[1.5vh]">
-                        ${optionsHtml}
-                    </div>
-                </div>
-                ${feedbackHtml}
-            </div>
-            `;
+            lucide.createIcons();
         }
 
-        // --- 4. 結算畫面 (液態排版分配) ---
-        function renderResult() {
+        function updateResultState() {
             let title = score === 9 ? "完美通關神射手！" : (score >= 6 ? "優秀環保尖兵！" : "再接再厲小尖兵！");
             let message = score === 9 ? "太厲害了！你消滅了所有的污染怪獸，成功守護了敦和國小！" : 
                          (score >= 6 ? "表現不錯喔！擊退了大部分的怪獸，繼續保持環保好習慣！" : "怪獸還在搗蛋！重新拿好沙包，再挑戰一次吧！");
@@ -557,74 +472,85 @@
             let starCount = score === 9 ? 3 : (score >= 6 ? 2 : 1);
             let starsHtml = '<div class="flex justify-center items-end gap-[1vw] mb-[2vh]">';
             for(let i=0; i<3; i++) {
-                let isCenter = i === 1;
-                let sizeClass = isCenter ? 'w-[clamp(4rem,10vh,6rem)] h-auto mb-[2vh]' : 'w-[clamp(3rem,8vh,4.5rem)] h-auto';
+                let sizeClass = (i === 1) ? 'w-[clamp(4rem,10vh,6rem)] h-auto mb-[2vh]' : 'w-[clamp(3rem,8vh,4.5rem)] h-auto';
                 let colorClass = i < starCount ? 'text-yellow-400' : 'text-gray-300 opacity-50';
                 let fillStyle = i < starCount ? 'fill: currentColor' : 'fill: none';
                 starsHtml += `<i data-lucide="star" class="${sizeClass} ${colorClass} drop-shadow-md animate-bounce-slow" style="animation-delay: ${i*0.2}s; ${fillStyle}"></i>`;
             }
             starsHtml += '</div>';
 
-            return `
-            <div class="w-full h-full bg-white/95 backdrop-blur-xl rounded-[clamp(1.5rem,4vh,3rem)] shadow-2xl border-[clamp(6px,1vh,12px)] border-white p-[clamp(1.5rem,4vh,3rem)] flex flex-row gap-[4vw] animate-zoom-in relative">
-                <div class="absolute top-[-20%] right-[-10%] w-[30vh] h-[30vh] bg-yellow-200/40 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute bottom-[-10%] left-[-10%] w-[25vh] h-[25vh] bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
-
-                <!-- 左側：榮譽勳章與評價區 -->
-                <div class="w-5/12 h-full rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] flex flex-col items-center justify-evenly border-[clamp(6px,1vh,12px)] ${badgeBg} relative shadow-inner">
-                    <i data-lucide="sparkles" class="absolute top-[10%] left-[10%] w-[clamp(2rem,5vh,3rem)] h-auto text-yellow-400 animate-pulse opacity-80"></i>
-                    <i data-lucide="sparkles" class="absolute bottom-[15%] right-[10%] w-[clamp(2.5rem,6vh,4rem)] h-auto text-yellow-500 animate-pulse opacity-80"></i>
-                    ${starsHtml}
-                    <div class="relative animate-float my-[1vh]">
-                        <i data-lucide="award" class="w-[clamp(150px,35vh,250px)] h-auto ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
-                        <i data-lucide="award" class="absolute inset-0 w-[clamp(150px,35vh,250px)] h-auto ${badgeColor}"></i>
-                        <div class="absolute inset-0 flex items-center justify-center flex-col pt-[15%]">
-                            <span class="text-white font-black text-[clamp(2.5rem,6vh,4.5rem)] drop-shadow-md">${score * 100}</span>
-                        </div>
-                    </div>
-                    <div class="bg-white/90 px-[2vw] py-[1.5vh] rounded-[clamp(1.5rem,3vh,2.5rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-lg z-10 w-[95%] text-center relative mt-[2vh]">
-                        <div class="absolute -top-[1.5vh] left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-[clamp(0.8rem,2vh,1.2rem)] font-bold px-[1vw] py-[0.5vh] rounded-full whitespace-nowrap">最終稱號</div>
-                        <h2 class="text-[clamp(1.8rem,4vh,2.8rem)] font-black text-gray-800 drop-shadow-sm tracking-wide mt-[1vh]">${title}</h2>
+            dom.resultBadge.className = `flex-shrink-0 w-[40%] h-full rounded-[clamp(1.5rem,4vh,3rem)] p-[clamp(1.5rem,4vh,3rem)] flex flex-col items-center justify-evenly border-[clamp(6px,1vh,12px)] relative shadow-inner ${badgeBg}`;
+            dom.resultBadge.innerHTML = `
+                <i data-lucide="sparkles" class="absolute top-[10%] left-[10%] w-[clamp(2rem,5vh,3rem)] h-auto text-yellow-400 animate-pulse opacity-80"></i>
+                <i data-lucide="sparkles" class="absolute bottom-[15%] right-[10%] w-[clamp(2.5rem,6vh,4rem)] h-auto text-yellow-500 animate-pulse opacity-80"></i>
+                ${starsHtml}
+                <div class="relative animate-float my-[1vh]">
+                    <i data-lucide="award" class="w-[clamp(150px,35vh,250px)] h-auto ${badgeColor} drop-shadow-[0_15px_20px_rgba(0,0,0,0.15)]" style="fill: currentColor; opacity: 0.2"></i>
+                    <i data-lucide="award" class="absolute inset-0 w-[clamp(150px,35vh,250px)] h-auto ${badgeColor}"></i>
+                    <div class="absolute inset-0 flex items-center justify-center flex-col pt-[15%]">
+                        <span class="text-white font-black text-[clamp(2.5rem,6vh,4.5rem)] drop-shadow-md">${score * 100}</span>
                     </div>
                 </div>
-
-                <!-- 右側：官方認證與詳細數據區 -->
-                <div class="w-7/12 h-full flex flex-col justify-between py-0">
-                    <div class="flex items-center gap-[1.5vw] bg-gray-50/80 px-[2vw] py-[1.5vh] rounded-full border-2 border-gray-200 shadow-sm w-max flex-shrink-0">
-                        <img src="image_1c45dd.png" class="h-[clamp(30px,6vh,60px)] object-contain" />
-                        <h3 class="text-[clamp(1rem,2.5vh,1.8rem)] font-black text-green-800 tracking-widest pt-1">南投縣政府環境保護局</h3>
-                    </div>
-
-                    <div class="flex-1 min-h-0 bg-blue-50 p-[clamp(1.5rem,4vh,3rem)] rounded-[clamp(1.5rem,4vh,3rem)] border-[clamp(3px,0.5vh,6px)] border-dashed border-blue-300 shadow-inner flex flex-col items-center justify-center my-[2vh]">
-                        <div class="flex items-center gap-[1vw] mb-[2.5vh] flex-shrink-0">
-                            <i data-lucide="party-popper" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-orange-500 animate-bounce"></i>
-                            <h3 class="text-[clamp(1.5rem,3.5vh,2.5rem)] font-black text-blue-800">闖關結果報告</h3>
-                            <i data-lucide="party-popper" class="w-[clamp(2rem,5vh,3.5rem)] h-auto text-orange-500 animate-bounce transform -scale-x-100"></i>
-                        </div>
-                        
-                        <p class="text-[clamp(1.2rem,3vh,2rem)] font-bold text-gray-700 leading-snug text-center mb-[4vh] flex-shrink-0">${message}</p>
-
-                        <div class="flex w-full justify-center gap-[3vw] flex-shrink-0">
-                            <div class="bg-white p-[clamp(1.2rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-md flex flex-col items-center min-w-[20vw]">
-                                <div class="text-gray-500 font-bold mb-[1vh] flex items-center gap-[0.5vw] text-[clamp(1rem,2.5vh,1.5rem)]"><i data-lucide="target" class="w-[clamp(1.2rem,3vh,1.8rem)] h-auto text-orange-400"></i> 獲得分數</div>
-                                <div class="text-[clamp(2.5rem,6vh,4.5rem)] font-black text-orange-500">${score * 100}</div>
-                            </div>
-                            <div class="bg-white p-[clamp(1.2rem,3vh,2rem)] rounded-[clamp(1rem,3vh,2rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-md flex flex-col items-center min-w-[20vw]">
-                                <div class="text-gray-500 font-bold mb-[1vh] flex items-center gap-[0.5vw] text-[clamp(1rem,2.5vh,1.5rem)]"><i data-lucide="swords" class="w-[clamp(1.2rem,3vh,1.8rem)] h-auto text-green-500"></i> 擊敗怪獸</div>
-                                <div class="text-[clamp(2.5rem,6vh,4.5rem)] font-black text-green-600">${score}<span class="text-[clamp(1.5rem,4vh,3rem)] text-gray-300 ml-1">/9</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onclick="handleStart()" class="flex-shrink-0 grid-btn w-full bg-gradient-to-b from-blue-500 to-blue-700 text-white font-black text-[clamp(1.5rem,3.5vh,2.5rem)] py-[clamp(1.2rem,2.5vh,2rem)] rounded-[clamp(1.5rem,4vh,3rem)] flex items-center justify-center gap-[1vw] hover:from-blue-600 hover:to-blue-800">
-                        <i data-lucide="refresh-ccw" class="w-[clamp(2rem,4.5vh,3.5rem)] h-auto"></i> 再玩一次
-                    </button>
+                <div class="bg-white/90 px-[2vw] py-[1.5vh] rounded-[clamp(1.5rem,3vh,2.5rem)] border-[clamp(3px,0.5vh,6px)] border-white shadow-lg z-10 w-[95%] text-center relative mt-[2vh]">
+                    <div class="absolute -top-[1.5vh] left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-[clamp(0.8rem,2vh,1.2rem)] font-bold px-[1vw] py-[0.5vh] rounded-full whitespace-nowrap">最終稱號</div>
+                    <h2 class="text-[clamp(1.8rem,4vh,2.8rem)] font-black text-gray-800 drop-shadow-sm tracking-wide mt-[1vh]">${title}</h2>
                 </div>
-            </div>
             `;
+
+            dom.resultScoreVal.textContent = score * 100;
+            dom.resultMessage.textContent = message;
+            dom.resultKillVal.innerHTML = `${score}<span class="text-[clamp(1.5rem,4vh,3rem)] text-gray-300 ml-1">/9</span>`;
+            
+            lucide.createIcons();
         }
 
-        render();
+        window.handleStart = function() { 
+            gameState = 'grid'; answeredStatus = new Array(9).fill(null); score = 0; switchView('grid'); 
+        }
+        window.promptRestart = function() { 
+            dom.confirm.classList.remove('hidden-view'); 
+        }
+        window.confirmRestart = function(yes) {
+            dom.confirm.classList.add('hidden-view');
+            if(yes) { gameState = 'start'; answeredStatus = new Array(9).fill(null); score = 0; currentQ = 0; feedback = null; switchView('start'); }
+        }
+        window.selectQuestion = function(idx) {
+            if (answeredStatus[idx] !== null) return; 
+            currentQ = idx; gameState = 'playing'; feedback = null; switchView('playing');
+        }
+        window.handleAnswer = function(idx) {
+            if (feedback !== null) return; 
+            const isCorrect = idx === parsedQuestions[currentQ].correctAnswer;
+            if (isCorrect) score += 1;
+            answeredStatus[currentQ] = isCorrect;
+            feedback = { isCorrect: isCorrect, text: parsedQuestions[currentQ].pExplanation };
+            updatePlayingState(); 
+        }
+        window.handleNext = function() {
+            let completedCount = answeredStatus.filter(s => s !== null).length;
+            if (completedCount === 9) switchView('result'); else switchView('grid');
+        }
+
+        window.addEventListener('load', () => {
+            parsedQuestions = questions.map(q => ({
+                ...q,
+                pScenario: parseZhuyin(q.scenario),
+                pQuestion: parseZhuyin(q.question),
+                pOptions: q.options.map(opt => parseZhuyin(opt)),
+                pExplanation: parseZhuyin(q.explanation)
+            }));
+
+            initViews();
+            switchView('start');
+
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 300);
+        });
     </script>
 </body>
 </html>
